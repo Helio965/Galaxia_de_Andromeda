@@ -1,0 +1,22 @@
+# Dependencies (the project itself has none, but local tooling might)
+node_modules/
+.cache/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.tmp
+*~
+
+# Local test output
+screenshots/
+test-results/
+playwright-report/
