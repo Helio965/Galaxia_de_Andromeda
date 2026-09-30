@@ -25,7 +25,9 @@ export const PROFILES = {
     background: 45000,
     brightStars: 420,
     galaxies: 260, // faint background galaxies
-    volumeSteps: 32, // samples per pixel through the diffuse disc light
+    volumeSteps: 32, // max samples per pixel through the diffuse disc light
+    volumeStepLength: 0.35, // kpc between samples (fewer when seen face-on)
+    volumeScale: 1, // resolution of the diffuse light, relative to CSS pixels
     mapSize: 2048,
     maxPixelRatio: 2,
     finish: true, // vignette + dithering pass
@@ -44,6 +46,8 @@ export const PROFILES = {
     brightStars: 320,
     galaxies: 160,
     volumeSteps: 24,
+    volumeStepLength: 0.45,
+    volumeScale: 0.85,
     mapSize: 2048,
     maxPixelRatio: 1.75,
     finish: true,
@@ -62,6 +66,8 @@ export const PROFILES = {
     brightStars: 220,
     galaxies: 80,
     volumeSteps: 14,
+    volumeStepLength: 0.65,
+    volumeScale: 0.6,
     mapSize: 1024,
     maxPixelRatio: 1.25,
     finish: true,
@@ -80,6 +86,8 @@ export const PROFILES = {
     brightStars: 140,
     galaxies: 0,
     volumeSteps: 8,
+    volumeStepLength: 0.9,
+    volumeScale: 0.5,
     mapSize: 1024,
     maxPixelRatio: 1,
     finish: false,
@@ -109,7 +117,7 @@ export function chooseQuality(gpu, search = window.location.search) {
 
   // Rendering on the CPU: keep it as light as possible.
   if (gpu.kind === 'software') {
-    return { ...PROFILES.low, maxPixelRatio: 1, volumeSteps: 6, forced: false, adaptive, reason: 'software' };
+    return { ...PROFILES.low, maxPixelRatio: 1, volumeSteps: 6, volumeStepLength: 1.2, forced: false, adaptive, reason: 'software' };
   }
   // Phones: small screen, tight power budget. A little extra resolution keeps stars crisp.
   if (coarsePointer && shortSide < 600) {

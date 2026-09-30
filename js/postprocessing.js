@@ -3,6 +3,10 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
+
+/** Objects on this layer (the diffuse light volume) are drawn by VolumePass. */
+export const VOLUME_LAYER = 1;
 
 // Only HDR values above the threshold glow: the nucleus, bright stars and the
 // densest star clouds. Weights favour the small blur levels: a tight glow
@@ -71,15 +75,94 @@ class FinishPass extends OutputPass {
 }
 
 /**
- * RenderPass (HDR, half float) -> UnrealBloomPass -> output.
+ * Draws the diffuse light volume into its own HDR buffer, at a resolution tied
+ * to CSS pixels (not device pixels), then adds it onto the scene. The volume is
+ * the costliest part of the frame and entirely smooth: on a 4K or retina
+ * screen it does not need 4× the samples. Bilinear upsampling hides the change.
+ */
+class VolumePass extends Pass {
+  constructor(scene, camera) {
+    super();
+    this.scene = scene;
+    this.camera = camera;
+    this.needsSwap = false;
+    this.scale = 1; // fraction of the CSS resolution
+    this.pixelRatio = 1;
+    this.size = new THREE.Vector2(1, 1);
+    this.target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false });
+    this.target.texture.name = 'DiffuseLightBuffer';
+    this.quad = new FullScreenQuad(
+      new THREE.ShaderMaterial({
+        name: 'DiffuseLightComposite',
+        uniforms: { tDiffuse: { value: this.target.texture } },
+        vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+        // Alpha forced to 1: additive blending multiplies by it, and the buffer's
+        // alpha accumulated > 1 while the volume was drawn.
+        fragmentShader:
+          'uniform sampler2D tDiffuse; varying vec2 vUv; void main() { gl_FragColor = vec4(texture2D(tDiffuse, vUv).rgb, 1.0); }',
+        blending: THREE.AdditiveBlending,
+        depthTest: false,
+        depthWrite: false,
+        transparent: true,
+      }),
+    );
+  }
+
+  /** Width and height in device pixels (what EffectComposer passes). */
+  setSize(width, height) {
+    this.size.set(width, height);
+    const factor = this.scale / this.pixelRatio;
+    this.target.setSize(Math.max(1, Math.round(width * factor)), Math.max(1, Math.round(height * factor)));
+  }
+
+  get height() {
+    return this.target.height;
+  }
+
+  render(renderer, writeBuffer, readBuffer) {
+    const mask = this.camera.layers.mask;
+    const background = this.scene.background;
+    const autoClear = renderer.autoClear;
+    this.camera.layers.set(VOLUME_LAYER);
+    this.scene.background = null;
+    renderer.autoClear = false;
+
+    renderer.setRenderTarget(this.target);
+    renderer.setClearColor(0x000000, 1);
+    renderer.clear();
+    renderer.render(this.scene, this.camera);
+
+    // Add it onto the scene rendered by the previous pass (without clearing it).
+    renderer.setRenderTarget(readBuffer);
+    this.quad.render(renderer);
+
+    renderer.autoClear = autoClear;
+    this.scene.background = background;
+    this.camera.layers.mask = mask;
+  }
+
+  dispose() {
+    this.target.dispose();
+    this.quad.material.dispose();
+    this.quad.dispose();
+  }
+}
+
+/**
+ * RenderPass (HDR, half float) -> VolumePass -> UnrealBloomPass -> output.
+ * Everything is additive light, so the volume can be drawn apart and added.
  * The output pass does the tone mapping + sRGB conversion; on capable
  * profiles it also adds a light vignette and dithering (no banding in the
  * dark gradients of the glow).
  */
-export function createPostProcessing({ renderer, scene, camera, finish }) {
+export function createPostProcessing({ renderer, scene, camera, finish, volumeScale }) {
   const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false });
   const composer = new EffectComposer(renderer, target);
-  composer.addPass(new RenderPass(scene, camera));
+  composer.addPass(new RenderPass(scene, camera)); // everything but the volume (layer 0)
+
+  const volume = new VolumePass(scene, camera);
+  volume.scale = volumeScale;
+  composer.addPass(volume);
 
   const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), BLOOM.strength, BLOOM.radius, BLOOM.threshold);
   bloom.compositeMaterial.uniforms.bloomFactors.value = BLOOM_FACTORS;
@@ -95,6 +178,17 @@ export function createPostProcessing({ renderer, scene, camera, finish }) {
   return {
     composer,
     bloom,
+    get volumeScale() {
+      return volume.scale;
+    },
+    /** Height of the volume buffer in pixels (for its texture level of detail). */
+    get volumeHeight() {
+      return volume.height;
+    },
+    setVolumeScale(scale) {
+      volume.scale = scale;
+      volume.setSize(volume.size.x, volume.size.y);
+    },
     get finish() {
       return finishOutput.enabled;
     },
@@ -107,6 +201,7 @@ export function createPostProcessing({ renderer, scene, camera, finish }) {
       bloom.enabled = level > 0;
     },
     setSize(width, height, pixelRatio) {
+      volume.pixelRatio = pixelRatio;
       composer.setPixelRatio(pixelRatio);
       composer.setSize(width, height);
     },

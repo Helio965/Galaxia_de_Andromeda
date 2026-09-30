@@ -38,7 +38,9 @@ export const volumeFragment = /* glsl */ `
   #define MAX_STEPS 32
   #endif
 
-  uniform int uSteps;
+  uniform int uSteps;         // upper bound of samples per ray
+  uniform int uMinSteps;
+  uniform float uStepLength;  // target distance between samples (kpc)
   uniform float uDiskRadius;
   uniform float uDiskScale;
   uniform float uOldSigma;
@@ -53,6 +55,16 @@ export const volumeFragment = /* glsl */ `
   uniform vec3 uBulgeColor[BULGE_COMPONENTS];
 
   varying vec3 vLocal;
+
+  // erf() is ±1 (to 2e-5) beyond |x| = 3: most samples of the thin layers and
+  // of the compact bulge components land there, so skip the maths.
+  float erfFast(float x) {
+    return abs(x) >= 3.0 ? sign(x) : erfApprox(x);
+  }
+
+  vec3 erf3(vec3 x) {
+    return vec3(erfFast(x.x), erfFast(x.y), erfFast(x.z));
+  }
 
   // Interleaved gradient noise (Jimenez 2014): per-pixel jitter of the samples.
   float ign(vec2 pixel) {
@@ -116,53 +128,73 @@ export const volumeFragment = /* glsl */ `
       // Bulge light in front of the disc slab: not dimmed.
       light = bulgeLight(blobs, 0.0, tIn) * uCoreLight;
 
-      float dt = (tOut - tIn) / float(uSteps);
+      // Enough samples for the length of the ray inside the disc: few when the
+      // disc is seen face-on (short crossing), up to uSteps when seen edge-on.
+      int steps = int(clamp(ceil((tOut - tIn) / uStepLength), float(uMinSteps), float(uSteps)));
+      float dt = (tOut - tIn) / float(steps);
       float jitter = ign(gl_FragCoord.xy);
       // Mip level from the pixel footprint on the disc (textureLod: the loop is not uniform).
       float grazing = max(abs(rd.y), 0.12);
 
-      // erf() of each bulge component at the start of the current step, reused
-      // as the end of the previous one. Components the ray passes far from are skipped.
+      // Vertical profiles of the three layers (old disc, young disc, dust),
+      // integrated exactly over each step: erf() at the step's end is reused
+      // as the start of the next one. Nearly horizontal rays (tiny vertical
+      // steps) use the midpoint value instead, where erf differences lose precision.
+      vec3 sigma = vec3(uOldSigma, uYoungSigma, uDustSigma);
+      vec3 k = 0.70710678 / sigma;
+      float dy = rd.y * dt;
+      bvec3 midpoint = lessThan(vec3(abs(dy)), 0.3 * sigma);
+      bool anyMidpoint = any(midpoint);
+      vec3 norm = 1.25331414 * sigma / (abs(dy) > 1e-9 ? dy : 1e-9);
+      float ya = ro.y + rd.y * tIn;
+      vec3 erfA = erf3(ya * k);
+
+      // Same trick for the bulge. Components the ray passes far from are skipped.
       float erfStart[BULGE_COMPONENTS];
       bool bulgeActive[BULGE_COMPONENTS];
       for (int j = 0; j < BULGE_COMPONENTS; j++) {
-        bulgeActive[j] = blobs[j].amplitude * uBulgeShape[j].w > 1e-4;
-        erfStart[j] = erfApprox(blobs[j].k * (tIn - blobs[j].center));
+        bulgeActive[j] = blobs[j].amplitude * uBulgeShape[j].w > 5e-4;
+        erfStart[j] = erfFast(blobs[j].k * (tIn - blobs[j].center));
       }
 
       for (int i = 0; i < MAX_STEPS; i++) {
-        if (i >= uSteps) break;
+        if (i >= steps) break;
         float ta = tIn + dt * float(i);
         float tb = ta + dt;
-        vec3 pa = ro + rd * ta;
-        vec3 pb = ro + rd * tb;
-        vec3 ps = ro + rd * (ta + jitter * dt);
+        float yb = ya + dy;
+        float ts = ta + jitter * dt;
+        vec3 ps = ro + rd * ts;
 
-        float footprint = max((ta + jitter * dt) * uPixelAngle / grazing, dt * a * 0.25);
+        float footprint = max(ts * uPixelAngle / grazing, dt * a * 0.25);
         float lod = log2(max(footprint / uTexelSize, 1.0));
         vec4 map = galaxyMap(ps.xz, lod);
         float radius = length(ps.xz);
 
+        vec3 erfB = erf3(yb * k);
+        vec3 g = norm * (erfB - erfA);
+        if (anyMidpoint) {
+          vec3 ym = (0.5 * (ya + yb)) / sigma;
+          g = mix(g, exp(-0.5 * ym * ym), vec3(midpoint));
+        }
+        erfA = erfB;
+        ya = yb;
+
         float edge = 1.0 - smoothstep(uDiskRadius - 5.0, uDiskRadius, radius);
         float oldProfile = exp(-sqrt(radius * radius + 0.64) / uDiskScale) * edge;
 
-        float gOld = gaussMean(pa.y, pb.y, uOldSigma);
-        float gYoung = gaussMean(pa.y, pb.y, uYoungSigma);
-        float gDust = gaussMean(pa.y, pb.y, uDustSigma);
-
-        vec3 emission = oldDiscColor(radius) * (uDiskLight * oldProfile * (0.72 + 0.5 * map.a) * gOld)
-                      + vec3(0.4, 0.6, 1.0) * (uYoungLight * map.g * gYoung)
-                      + vec3(1.0, 0.36, 0.48) * (uHiiLight * map.b * gYoung);
+        vec3 emission = oldDiscColor(radius) * (uDiskLight * oldProfile * (0.72 + 0.5 * map.a) * g.x)
+                      + vec3(0.4, 0.6, 1.0) * (uYoungLight * map.g * g.y)
+                      + vec3(1.0, 0.36, 0.48) * (uHiiLight * map.b * g.y);
         vec3 bulge = vec3(0.0);
         for (int j = 0; j < BULGE_COMPONENTS; j++) {
           if (!bulgeActive[j]) continue;
-          float erfEnd = erfApprox(blobs[j].k * (tb - blobs[j].center));
+          float erfEnd = erfFast(blobs[j].k * (tb - blobs[j].center));
           bulge += uBulgeColor[j] * (uBulgeShape[j].w * blobs[j].amplitude * (erfEnd - erfStart[j]));
           erfStart[j] = erfEnd;
         }
         emission = emission * dt + bulge * uCoreLight;
 
-        vec3 tau = uDustStrength * map.r * gDust * dt * DUST_REDDENING;
+        vec3 tau = uDustStrength * map.r * g.z * dt * DUST_REDDENING;
         // Light emitted inside the step is, on average, behind half of its dust.
         light += transmittance * emission * exp(-0.5 * tau);
         transmittance *= exp(-tau);

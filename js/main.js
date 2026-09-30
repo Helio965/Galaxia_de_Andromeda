@@ -101,7 +101,13 @@ async function start() {
   const sky = createBackgroundSky({ quality, seed });
   scene.add(sky.group);
 
-  const post = createPostProcessing({ renderer, scene, camera, finish: quality.finish });
+  const post = createPostProcessing({
+    renderer,
+    scene,
+    camera,
+    finish: quality.finish,
+    volumeScale: quality.volumeScale,
+  });
 
   // --- Settings -------------------------------------------------------------------------
   let densityBudget = 1; // lowered by the adaptive quality
@@ -146,7 +152,7 @@ async function start() {
     post.setSize(width, height, pixelRatio);
 
     heightPixels = Math.max(1, Math.round(height * pixelRatio));
-    galaxy.setViewport(heightPixels, camera.fov);
+    galaxy.setViewport(heightPixels, post.volumeHeight, camera.fov);
     sky.setViewport(heightPixels);
     homeDepth = homeDistance(camera.aspect, rig.roll);
   }
@@ -158,13 +164,16 @@ async function start() {
   // waits for the frame rate to settle (see createFrameRateGovernor).
   const downgrades = [
     () => lowerPixelRatio(1.25),
+    () => lowerVolumeScale(0.75),
     () => lowerVolume(0.7, 12),
     () => lowerDensity(0.72, 0.5),
     () => lowerPixelRatio(1),
+    () => lowerVolumeScale(0.5),
     () => (post.finish ? (post.setFinish(false), true) : false),
     () => (sky.setFraction(0.5), true),
     () => lowerDensity(0.7, 0.3),
     () => lowerVolume(0.6, 6),
+    () => lowerVolumeScale(0.35),
     () => lowerPixelRatio(0.75),
     () => lowerDensity(0.6, 0.15),
   ];
@@ -177,6 +186,12 @@ async function start() {
     if (currentPixelRatio() <= limit + 1e-3) return false;
     maxPixelRatio = limit;
     onResize();
+    return true;
+  }
+  function lowerVolumeScale(limit) {
+    if (post.volumeScale <= limit + 1e-3) return false;
+    post.setVolumeScale(limit);
+    galaxy.setViewport(heightPixels, post.volumeHeight, camera.fov);
     return true;
   }
   function lowerVolume(factor, min) {
@@ -201,7 +216,7 @@ async function start() {
           hud.markAdjusted();
           console.info(
             `[andromeda] ${fps.toFixed(1)} fps -> pixel ratio ${currentPixelRatio().toFixed(2)}, ` +
-              `${galaxy.light.steps} volume steps, ${galaxy.starCount} stars`,
+              `volume ${Math.round(post.volumeScale * 100)}% × ${galaxy.light.steps} steps, ${galaxy.starCount} stars`,
           );
           return true;
         }
@@ -266,7 +281,7 @@ async function start() {
       skyTime += delta;
     }
 
-    if (rig.update(delta)) galaxy.setViewport(heightPixels, camera.fov);
+    if (rig.update(delta)) galaxy.setViewport(heightPixels, post.volumeHeight, camera.fov);
     galaxy.setOrientation(rig.roll, tiltRadians());
     galaxy.update(galaxyTime, camera, referenceDepth());
     sky.update(skyTime);

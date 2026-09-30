@@ -78,6 +78,7 @@ export async function createGalaxy({ renderer, quality, seed }) {
     sharedUniforms: shared,
     bulge: core.lightComponents,
     maxSteps: quality.volumeSteps,
+    stepLength: quality.volumeStepLength,
     mapSize: quality.mapSize,
   });
 
@@ -143,11 +144,12 @@ export async function createGalaxy({ renderer, quality, seed }) {
     },
     /**
      * @param {number} heightPixels drawing buffer height (device pixels)
+     * @param {number} volumeHeight height of the diffuse light buffer (pixels)
      * @param {number} fov vertical field of view (degrees)
      */
-    setViewport(heightPixels, fov) {
+    setViewport(heightPixels, volumeHeight, fov) {
       shared.uSizeScale.value = heightPixels / 1080;
-      light.setPixelAngle((2 * Math.tan(THREE.MathUtils.degToRad(fov / 2))) / heightPixels);
+      light.setPixelAngle((2 * Math.tan(THREE.MathUtils.degToRad(fov / 2))) / volumeHeight);
     },
     /**
      * @param {number} time galaxy clock (seconds × speed)

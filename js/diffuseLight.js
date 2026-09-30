@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { volumeVertex, volumeFragment } from './shaders/volume.glsl.js';
 import { MODEL, LIGHT } from './config.js';
+import { VOLUME_LAYER } from './postprocessing.js';
 
 const SQRT_2PI = Math.sqrt(2 * Math.PI);
 const BOX_HALF_HEIGHT = 5; // contains the bulge's light (its widest Gaussian, ×3σ)
@@ -13,12 +14,14 @@ const BOX_HALF_HEIGHT = 5; // contains the bulge's light (its widest Gaussian, �
  *
  * @param {number} maxSteps compile-time upper bound (the profile's value)
  */
-export function createDiffuseLight({ sharedUniforms, bulge, maxSteps, mapSize }) {
+export function createDiffuseLight({ sharedUniforms, bulge, maxSteps, stepLength, mapSize }) {
   const radius = MODEL.diskOuter + 1;
 
   const uniforms = {
     ...sharedUniforms,
     uSteps: { value: maxSteps },
+    uMinSteps: { value: Math.min(6, maxSteps) },
+    uStepLength: { value: stepLength },
     uDiskRadius: { value: radius },
     uDiskScale: { value: MODEL.diskScaleLength },
     uOldSigma: { value: MODEL.oldSigma },
@@ -53,7 +56,7 @@ export function createDiffuseLight({ sharedUniforms, bulge, maxSteps, mapSize })
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(radius * 2, BOX_HALF_HEIGHT * 2, radius * 2), material);
   mesh.name = 'DiffuseLight';
   mesh.frustumCulled = false;
-  mesh.renderOrder = -1;
+  mesh.layers.set(VOLUME_LAYER); // drawn by VolumePass, at its own resolution
 
   const base = {
     young: uniforms.uYoungLight.value,
@@ -68,8 +71,12 @@ export function createDiffuseLight({ sharedUniforms, bulge, maxSteps, mapSize })
     get steps() {
       return uniforms.uSteps.value;
     },
+    /** Fewer samples per ray: lower bound, upper bound and spacing all follow. */
     setSteps(steps) {
-      uniforms.uSteps.value = THREE.MathUtils.clamp(Math.round(steps), 4, maxSteps);
+      const value = THREE.MathUtils.clamp(Math.round(steps), 4, maxSteps);
+      uniforms.uStepLength.value = stepLength * (maxSteps / value);
+      uniforms.uSteps.value = value;
+      uniforms.uMinSteps.value = Math.min(uniforms.uMinSteps.value, value);
     },
     setCore(value) {
       uniforms.uCoreLight.value = value;
@@ -78,7 +85,7 @@ export function createDiffuseLight({ sharedUniforms, bulge, maxSteps, mapSize })
       uniforms.uYoungLight.value = base.young * value;
       uniforms.uHiiLight.value = base.hii * value;
     },
-    /** @param {number} pixelAngle radians covered by one device pixel */
+    /** @param {number} pixelAngle radians covered by one pixel of the volume buffer */
     setPixelAngle(pixelAngle) {
       uniforms.uPixelAngle.value = pixelAngle;
     },

@@ -62,7 +62,7 @@ export const MODEL = {
   // In the photographs M31 runs diagonally across the frame, seen ~13° from edge-on.
   roll: 28 * DEG, // landscape screens
   rollPortrait: 58 * DEG, // tall screens: run along the long side
-  visibleRadius: 23.5, // radius used to frame the galaxy on screen
+  visibleRadius: 24.5, // radius used to frame the galaxy on screen
 };
 
 /** Pattern angular speed (rad per galaxy second, unsigned). */
