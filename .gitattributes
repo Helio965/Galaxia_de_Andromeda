@@ -1,0 +1,11 @@
+# Keep text files normalised in the repository.
+* text=auto
+
+# Windows launcher files need CRLF line endings, also in GitHub's ZIP download.
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary assets
+*.jpg binary
+*.png binary
+*.webp binary
