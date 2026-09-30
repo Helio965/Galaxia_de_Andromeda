@@ -1,1 +1,1 @@
-# Gal-xia-de-Andr-meda
+# Galaxia-de-Andromeda
