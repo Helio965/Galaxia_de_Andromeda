@@ -17,12 +17,10 @@ import { MODEL } from './config.js';
 
 const canvas = document.getElementById('scene');
 
-if (location.protocol !== 'file:') {
-  start().catch((error) => {
-    console.error('[andromeda] failed to start:', error);
-    showFatal('Não foi possível iniciar a cena 3D. Veja o console do navegador (F12) para detalhes.');
-  });
-}
+start().catch((error) => {
+  console.error('[andromeda] failed to start:', error);
+  showFatal('Não foi possível iniciar a cena 3D. Veja o console do navegador (F12) para detalhes.');
+});
 
 function createRenderer(target) {
   try {
@@ -97,7 +95,7 @@ async function start() {
   const { camera } = rig;
 
   const seed = readSeed();
-  const galaxy = createGalaxy({ renderer, quality, seed });
+  const galaxy = await createGalaxy({ renderer, quality, seed });
   scene.add(galaxy.group);
 
   const sky = createBackgroundSky({ quality, seed });
@@ -276,11 +274,12 @@ async function start() {
     post.render(delta);
   }
 
-  // Compile every shader before the first frame (in parallel where supported).
-  try {
+  // Compile every shader before the first frame, in parallel where the
+  // browser supports it (KHR_parallel_shader_compile), so the page never freezes.
+  if (renderer.extensions.has('KHR_parallel_shader_compile')) {
     await renderer.compileAsync(scene, camera);
-  } catch (error) {
-    console.warn('[andromeda] async shader compilation unavailable:', error);
+  } else {
+    renderer.compile(scene, camera);
   }
 
   frame();

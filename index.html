@@ -169,14 +169,19 @@
   </section>
 
   <script>
-    // ES modules never load from file:// — explain it instead of showing a black screen.
+    // ES modules never load from file:// (the browser blocks them): explain it
+    // instead of showing a black screen, and do not even request them.
     if (location.protocol === 'file:') {
       document.getElementById('file-notice').hidden = false;
       document.getElementById('hud').hidden = true;
       document.getElementById('hint').hidden = true;
       document.getElementById('loading').hidden = true;
+    } else {
+      const main = document.createElement('script');
+      main.type = 'module';
+      main.src = 'js/main.js';
+      document.body.appendChild(main);
     }
   </script>
-  <script type="module" src="js/main.js"></script>
 </body>
 </html>

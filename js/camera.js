@@ -42,7 +42,7 @@ export function homeDistance(aspect, roll) {
   const tanH = tanV * aspect;
   const distance = Math.max(halfWidth / (FILL * tanH), halfHeight / (FILL * tanV));
   // The near side of the disc is closer to the camera and looks bigger: add a margin.
-  return THREE.MathUtils.clamp(distance * 1.03, TELE_ABOVE, 360);
+  return THREE.MathUtils.clamp(distance * 1.07, TELE_ABOVE, 360);
 }
 
 function homePosition(aspect, roll, target = new THREE.Vector3()) {

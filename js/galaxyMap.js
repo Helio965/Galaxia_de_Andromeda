@@ -13,7 +13,7 @@ const PLACEMENT_SIZE = 512; // resolution of the CPU copy used to place stars
  * The map is the single source of truth: the blue stars are born where the map
  * has young light, and the dust lanes dim exactly the stars behind them.
  */
-export function createGalaxyMap(renderer, { size, seed }) {
+export async function createGalaxyMap(renderer, { size, seed }) {
   const material = new THREE.ShaderMaterial({
     uniforms: {
       uMapRadius: { value: MODEL.mapRadius },
@@ -37,7 +37,12 @@ export function createGalaxyMap(renderer, { size, seed }) {
   });
   draw(renderer, quad, placementTarget);
   const pixels = new Uint8Array(PLACEMENT_SIZE * PLACEMENT_SIZE * 4);
-  renderer.readRenderTargetPixels(placementTarget, 0, 0, PLACEMENT_SIZE, PLACEMENT_SIZE, pixels);
+  try {
+    // Asynchronous read (pixel buffer + fence): no pipeline stall.
+    await renderer.readRenderTargetPixelsAsync(placementTarget, 0, 0, PLACEMENT_SIZE, PLACEMENT_SIZE, pixels);
+  } catch {
+    renderer.readRenderTargetPixels(placementTarget, 0, 0, PLACEMENT_SIZE, PLACEMENT_SIZE, pixels);
+  }
   placementTarget.dispose();
 
   quad.dispose();

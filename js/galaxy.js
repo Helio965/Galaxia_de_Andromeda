@@ -26,12 +26,12 @@ const STAR_BRIGHTNESS = {
  * shares the same uniform objects, so updating the clock, the camera or the
  * dust once per frame reaches all of them.
  */
-export function createGalaxy({ renderer, quality, seed }) {
+export async function createGalaxy({ renderer, quality, seed }) {
   const group = new THREE.Group();
   group.name = 'M31';
   group.rotation.order = 'ZXY'; // roll in the picture, then inclination
 
-  const map = createGalaxyMap(renderer, { size: quality.mapSize, seed });
+  const map = await createGalaxyMap(renderer, { size: quality.mapSize, seed });
 
   const shared = {
     uTime: { value: 0 },

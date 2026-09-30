@@ -643,7 +643,11 @@ body {
   }
 
   .hud__row {
-    grid-template-columns: 58px 1fr;
+    grid-template-columns: 60px 1fr;
+  }
+
+  .hud__row dt {
+    letter-spacing: 0.1em;
   }
 
   .hint {

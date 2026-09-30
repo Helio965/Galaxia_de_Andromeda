@@ -127,9 +127,8 @@ export function createHud(gpu, quality) {
   let adjusted = false;
   function renderProfile() {
     let text = profileName;
-    if (quality.forced) text += ' · fixo';
-    else if (adjusted) text += ' · ajustado';
-    else text += ' · auto';
+    if (quality.forced) text += adjusted ? ' · reduzido' : ' · fixo';
+    else text += adjusted ? ' · ajustado' : ' · auto';
     profile.textContent = text;
   }
   renderProfile();
