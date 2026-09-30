@@ -33,6 +33,12 @@ export async function createGalaxy({ renderer, quality, seed }) {
 
   const map = await createGalaxyMap(renderer, { size: quality.mapSize, seed });
 
+  // Largest point sprite the hardware draws (some mobile GPUs stop at 64 px);
+  // highlight sprites are up to twice uMaxSize.
+  const gl = renderer.getContext();
+  const pointLimit = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)?.[1] ?? 64;
+  const maxPointSize = Math.max(8, Math.min(48, pointLimit / 2));
+
   const shared = {
     uTime: { value: 0 },
     uPatternAngle: { value: 0 },
@@ -48,7 +54,7 @@ export async function createGalaxy({ renderer, quality, seed }) {
     uSizeScale: { value: 1 },
     uRefDepth: { value: 40 },
     uMinSize: { value: 1.2 },
-    uMaxSize: { value: 48 },
+    uMaxSize: { value: maxPointSize },
     ...createDustUniforms(),
   };
 

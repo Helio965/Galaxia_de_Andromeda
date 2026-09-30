@@ -51,6 +51,26 @@ function readSeed() {
   return Number.isFinite(value) ? value >>> 0 : MODEL.seed;
 }
 
+const CONTEXT_RELOADS_KEY = 'andromeda-galaxy:context-reloads';
+
+/** Automatic reloads after a lost WebGL context during the last minute. */
+function recentContextReloads() {
+  try {
+    const list = JSON.parse(sessionStorage.getItem(CONTEXT_RELOADS_KEY) || '[]');
+    return Array.isArray(list) ? list.filter((time) => Date.now() - time < 60000) : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberContextReloads(list) {
+  try {
+    sessionStorage.setItem(CONTEXT_RELOADS_KEY, JSON.stringify(list));
+  } catch {
+    /* storage unavailable (private mode...): the guard just cannot persist */
+  }
+}
+
 function nextFrame() {
   return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
@@ -243,11 +263,22 @@ async function start() {
   setupKeyboard({ onTogglePause: togglePause, onResetCamera: () => rig.reset(), panel });
   setupHint(canvas);
 
-  // The browser (or the driver) can drop the WebGL context: say so instead of freezing.
+  // The browser (or the driver) can drop the WebGL context: say so instead of
+  // freezing, and reload (the procedural map lives only on the GPU). At most
+  // twice a minute, so a failing driver cannot trap the page in a reload loop.
   canvas.addEventListener('webglcontextlost', (event) => {
     event.preventDefault();
-    showFatal('A placa de vídeo reiniciou o WebGL. Recarregando…');
-    setTimeout(() => location.reload(), 1500);
+    const recent = recentContextReloads();
+    if (recent.length < 2) {
+      rememberContextReloads([...recent, Date.now()]);
+      showFatal('A placa de vídeo reiniciou o WebGL. Recarregando…');
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      showFatal(
+        'A placa de vídeo reiniciou o WebGL várias vezes. Feche outras abas com 3D, ' +
+          'atualize o driver de vídeo ou tente com ?quality=low no endereço.',
+      );
+    }
   });
 
   // --- Animation loop ---------------------------------------------------------------------------------
