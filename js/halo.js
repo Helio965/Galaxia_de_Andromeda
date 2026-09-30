@@ -44,11 +44,13 @@ export function createHalo({ count, globulars, seed, sharedUniforms, brightness 
     const cx = dir.x * r;
     const cy = dir.y * r * 0.85;
     const cz = dir.z * r;
-    const core = 0.03 + 0.06 * random();
+    // Globulars are only a few parsecs across: from outside the galaxy each one
+    // reads as a single fuzzy star that resolves into stars up close.
+    const core = 0.003 + 0.006 * random(); // 3-9 pc, like real globular clusters
     const members = Math.min(count - n, perCluster);
     for (let k = 0; k < members; k++, n++) {
       // Plummer-like: a dense core with an extended envelope.
-      const s = core * (1 + 2.5 * Math.pow(random(), 3));
+      const s = core * (1 + 3 * Math.pow(random(), 3));
       const bright = luminosity(random, 2.6);
       buffers.set(
         order[n],

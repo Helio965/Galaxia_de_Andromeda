@@ -46,6 +46,7 @@ export const galaxyStarVertex = /* glsl */ `
   varying vec3 vColor;
   #if defined(HIGHLIGHT) || defined(NEBULA)
   varying float vCore;
+  varying float vPixel; // one pixel, in sprite units (gl_PointCoord * 2)
   #endif
 
   float angularSpeed(float radius) {
@@ -94,6 +95,7 @@ export const galaxyStarVertex = /* glsl */ `
     #if defined(HIGHLIGHT) || defined(NEBULA)
       float sprite = min(size * uSpriteScale, uMaxSize * 2.0);
       vCore = size / sprite;
+      vPixel = 2.0 / sprite;
       size = sprite;
     #else
       size = min(size, uMaxSize);
@@ -132,7 +134,8 @@ export const starFragment = /* glsl */ `
 // Bright star: sharp core, faint halo and very discreet diffraction-like spikes.
 export const highlightFragment = /* glsl */ `
   varying vec3 vColor;
-  varying float vCore; // core radius, as a fraction of the sprite
+  varying float vCore;  // core radius, as a fraction of the sprite
+  varying float vPixel; // one pixel, in the same units
 
   void main() {
     vec2 c = gl_PointCoord * 2.0 - 1.0;
@@ -140,9 +143,11 @@ export const highlightFragment = /* glsl */ `
     if (r > 1.0) discard;
     float core = exp(-pow(r / max(vCore, 1e-3), 2.0) * 4.2);
     float halo = 0.05 * exp(-r * 6.0) + 0.012 * exp(-r * 2.5);
+    // Spikes at least ~1 pixel wide: thinner ones alias into dotted crosses.
     vec2 a = abs(c);
-    float spikes = (exp(-a.y / (0.012 + 0.02 * vCore)) * pow(1.0 - a.x, 3.0)
-                  + exp(-a.x / (0.012 + 0.02 * vCore)) * pow(1.0 - a.y, 3.0)) * 0.035;
+    float width = max(0.6 * vPixel, 0.012 + 0.02 * vCore);
+    float spikes = (exp(-a.y / width) * pow(1.0 - a.x, 3.0)
+                  + exp(-a.x / width) * pow(1.0 - a.y, 3.0)) * 0.03 * min(1.0, 0.02 / width);
     float edge = 1.0 - smoothstep(0.7, 1.0, r);
     gl_FragColor = vec4(vColor * (core + (halo + spikes) * edge), 1.0);
   }
@@ -152,6 +157,7 @@ export const highlightFragment = /* glsl */ `
 export const nebulaFragment = /* glsl */ `
   varying vec3 vColor;
   varying float vCore;
+  varying float vPixel;
 
   void main() {
     vec2 c = gl_PointCoord * 2.0 - 1.0;

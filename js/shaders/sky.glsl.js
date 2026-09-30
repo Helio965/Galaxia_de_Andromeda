@@ -23,6 +23,7 @@ export const skyVertex = /* glsl */ `
 
   varying vec3 vColor;
   varying float vCore;
+  varying float vPixel;
 
   void main() {
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
@@ -33,6 +34,7 @@ export const skyVertex = /* glsl */ `
     size = max(size, 1.2);
     float sprite = size * uSpriteScale;
     vCore = size / sprite;
+    vPixel = 2.0 / sprite;
     gl_PointSize = sprite;
 
     // Extremely subtle scintillation, each star at its own slow pace.

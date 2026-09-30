@@ -48,7 +48,8 @@ export function createBackgroundSky({ quality, seed }) {
     fill: (i, out) => {
       skyDirection(random, out.position);
       // A dozen truly bright stars, the rest moderate.
-      const boost = i < 12 ? 2.5 + 3 * random() : 0.7 + 1.1 * Math.pow(random(), 2);
+      // (Kept below ~3: brighter points make the bloom's low-resolution levels look blocky.)
+      const boost = i < 12 ? 1.8 + 1.2 * random() : 0.6 + 1.0 * Math.pow(random(), 2);
       out.star.set(1.6 + 0.9 * random(), boost, skyTemperature(random), random());
     },
   });

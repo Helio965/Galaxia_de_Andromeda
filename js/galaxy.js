@@ -17,7 +17,7 @@ const STAR_BRIGHTNESS = {
   highlights: 1.5,
   nebulae: 0.12,
   halo: 0.5,
-  satellites: 0.2,
+  satellites: 0.3,
 };
 
 /**

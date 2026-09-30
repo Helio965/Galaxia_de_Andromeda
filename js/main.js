@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { describeGpu } from './gpu.js';
 import { chooseQuality, createFrameRateGovernor } from './quality.js';
-import { createCameraRig, homeDistance, TELE_FOV } from './camera.js';
+import { createCameraRig, homeDistance, autoExposure, TELE_FOV } from './camera.js';
 import { createGalaxy } from './galaxy.js';
 import { createBackgroundSky } from './backgroundStars.js';
 import { createPostProcessing } from './postprocessing.js';
@@ -120,9 +120,7 @@ async function start() {
     bloom: (v) => post.setBloom(v),
     background: (v) => sky.setBrightness(v),
     tilt: () => {}, // applied every frame together with the roll
-    exposure: (v) => {
-      renderer.toneMappingExposure = v;
-    },
+    exposure: () => {}, // applied every frame, with the eye adaptation
     autoRotate: (v) => rig.setAutoRotate(v && !paused),
   };
   function applyDensity() {
@@ -282,6 +280,7 @@ async function start() {
     }
 
     if (rig.update(delta)) galaxy.setViewport(heightPixels, post.volumeHeight, camera.fov);
+    renderer.toneMappingExposure = settings.exposure * autoExposure(camera.position.length());
     galaxy.setOrientation(rig.roll, tiltRadians());
     galaxy.update(galaxyTime, camera, referenceDepth());
     sky.update(skyTime);

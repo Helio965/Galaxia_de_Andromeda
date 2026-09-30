@@ -92,6 +92,9 @@ export const mapFragment = /* glsl */ `
     float patches = 0.25 + 0.75 * smoothstep(-0.5, 0.35, fbm(q * 0.2 + uSeed * 4.0, 3));
     float dust = max(max(lanes, dustRing * 0.85), inner * 0.75) * feather * patches;
     dust = (dust + 0.05 * feather) * dustEnvelope;
+    // Thin diffuse dust all over the disc: barely visible face-on, but seen
+    // edge-on it draws the dark mid-plane lane of edge-on spirals.
+    dust += 0.14 * exp(-r / 9.0) * smoothstep(1.2, 3.5, r) * (1.0 - smoothstep(20.0, 25.0, r)) * patches;
 
     // ---- old disc ----------------------------------------------------------------
     float mottle = 0.5 + 0.5 * fbm(p * 0.22 + uSeed * 5.0, 3);

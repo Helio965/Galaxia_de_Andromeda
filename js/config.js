@@ -87,7 +87,7 @@ export const LIGHT = {
   // surface: peak surface brightness seen face-on; sigma in kpc; q = vertical axis ratio.
   bulge: [
     { surface: 6.0, sigma: 0.05, q: 0.9, color: [1.0, 0.97, 0.92] }, // nucleus
-    { surface: 1.6, sigma: 0.36, q: 0.8, color: [1.0, 0.92, 0.78] },
+    { surface: 1.35, sigma: 0.36, q: 0.8, color: [1.0, 0.92, 0.78] },
     { surface: 0.9, sigma: 1.15, q: 0.68, color: [1.0, 0.86, 0.64] },
     { surface: 0.36, sigma: 2.9, q: 0.56, color: [1.0, 0.82, 0.6] },
   ],

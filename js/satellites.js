@@ -20,8 +20,9 @@ const SATELLITES = [
     scale: 0.22, // Hernquist scale radius of the stars (kpc)
     max: 1.8,
     share: 0.32, // share of the satellite stars
-    core: { sigma: 0.11, surface: 1.5, color: [1.0, 0.95, 0.88] },
-    envelope: { sigma: 0.42, surface: 0.32, color: [1.0, 0.88, 0.72] },
+    starBrightness: 0.9, // compact and bright: a few resolved giants on top of the glow
+    core: { sigma: 0.12, surface: 1.5, color: [1.0, 0.95, 0.88] },
+    envelope: { sigma: 0.5, surface: 0.3, color: [1.0, 0.88, 0.72] },
     temperature: [0.2, 0.45],
   },
   {
@@ -32,8 +33,9 @@ const SATELLITES = [
     scale: 0.65,
     max: 4.2,
     share: 0.68,
-    core: { sigma: 0.2, surface: 0.32, color: [1.0, 0.93, 0.84] },
-    envelope: { sigma: 0.95, surface: 0.16, color: [0.96, 0.88, 0.76] },
+    starBrightness: 0.4, // diffuse: the glow dominates
+    core: { sigma: 0.22, surface: 0.36, color: [1.0, 0.93, 0.84] },
+    envelope: { sigma: 0.95, surface: 0.2, color: [0.96, 0.88, 0.76] },
     temperature: [0.22, 0.55],
   },
 ];
@@ -64,7 +66,16 @@ export function createSatellites({ count, seed, sharedUniforms, brightness }) {
       local.applyMatrix4(frame.matrix);
       const bright = luminosity(random, 3);
       const [t0, t1] = spec.temperature;
-      buffers.set(order[n], local.x, local.y, local.z, 1.2 + 0.8 * random() + 0.5 * bright, bright, t0 + (t1 - t0) * random(), random());
+      buffers.set(
+        order[n],
+        local.x,
+        local.y,
+        local.z,
+        1.2 + 0.8 * random() + 0.5 * bright,
+        bright * spec.starBrightness,
+        t0 + (t1 - t0) * random(),
+        random(),
+      );
     }
 
     return createGlow(spec, frame, sharedUniforms);

@@ -32,6 +32,14 @@ export function lensFor(distance) {
   return THREE.MathUtils.lerp(WIDE_FOV, TELE_FOV, t);
 }
 
+/**
+ * Eye adaptation: close to the bulge the bright core fills the view, so the
+ * exposure comes down a little (multiplies the user's exposure setting).
+ */
+export function autoExposure(distance) {
+  return THREE.MathUtils.lerp(0.55, 1, THREE.MathUtils.smoothstep(distance, 8, 70));
+}
+
 /** Camera distance that frames the whole visible disc for a given aspect. */
 export function homeDistance(aspect, roll) {
   const major = MODEL.visibleRadius;
