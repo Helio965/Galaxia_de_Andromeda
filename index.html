@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#01030a" />
+  <meta name="description" content="Visualização procedural interativa da Galáxia de Andrômeda (M31) em tempo real, com Three.js, WebGL 2 e shaders GLSL." />
+  <title>Andromeda Galaxy · M31 em WebGL</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2301030a'/%3E%3Cellipse cx='32' cy='32' rx='27' ry='9' transform='rotate(-28 32 32)' fill='%238fb0ff' opacity='.55'/%3E%3Cellipse cx='32' cy='32' rx='17' ry='5.5' transform='rotate(-28 32 32)' fill='%23ffe6b8' opacity='.8'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23fff8ea'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- Three.js r170 is shipped in vendor/: no build step, no npm, works offline. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/build/three.module.js",
+        "three/addons/": "./vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene" aria-label="Simulação 3D interativa da Galáxia de Andrômeda"></canvas>
+
+  <aside class="hud" id="hud" aria-label="Andromeda Galaxy">
+    <header class="hud__header">
+      <h1 class="hud__title">ANDROMEDA</h1>
+      <p class="hud__subtitle">M31 · NGC 224 · Andrômeda</p>
+    </header>
+
+    <dl class="hud__stats" id="hud-stats">
+      <div class="hud__row" id="gpu-status" data-kind="other">
+        <dt>GPU</dt>
+        <dd><span class="hud__dot" aria-hidden="true"></span><span class="hud__gpu-name" id="gpu-name">detectando…</span></dd>
+      </div>
+      <div class="hud__row">
+        <dt>FPS</dt>
+        <dd id="fps-value">—</dd>
+      </div>
+      <div class="hud__row">
+        <dt>Perfil</dt>
+        <dd id="profile-value">—</dd>
+      </div>
+      <div class="hud__row">
+        <dt>Estrelas</dt>
+        <dd id="stars-value">—</dd>
+      </div>
+    </dl>
+    <button class="hud__link" id="gpu-help-open" type="button" hidden>Está lento? Use a placa de vídeo dedicada</button>
+
+    <button class="hud__toggle" id="controls-toggle" type="button" aria-expanded="false" aria-controls="controls">
+      Controles
+      <svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" /></svg>
+    </button>
+
+    <form class="controls" id="controls" hidden>
+      <label class="control">
+        <span class="control__label">Velocidade da galáxia <output data-output="speed"></output></span>
+        <input type="range" data-setting="speed" min="0" max="4" step="0.05" />
+      </label>
+
+      <label class="control">
+        <span class="control__label">Densidade estelar <output data-output="density"></output></span>
+        <input type="range" data-setting="density" min="0.1" max="1" step="0.05" />
+      </label>
+
+      <label class="control">
+        <span class="control__label">Intensidade do núcleo <output data-output="core"></output></span>
+        <input type="range" data-setting="core" min="0" max="2.5" step="0.05" />
+      </label>
+
+      <label class="control">
+        <span class="control__label">Braços espirais <output data-output="arms"></output></span>
+        <input type="range" data-setting="arms" min="0" max="2" step="0.05" />
+      </label>
+
+      <label class="control">
+        <span class="control__label">Poeira <output data-output="dust"></output></span>
+        <input type="range" data-setting="dust" min="0" max="2" step="0.05" />
+      </label>
+
+      <label class="control">
+        <span class="control__label">Bloom <output data-output="bloom"></output></span>
+        <input type="range" data-setting="bloom" min="0" max="2" step="0.05" />
+      </label>
+
+      <label class="control">
+        <span class="control__label">Estrelas de fundo <output data-output="background"></output></span>
+        <input type="range" data-setting="background" min="0" max="2" step="0.05" />
+      </label>
+
+      <label class="control">
+        <span class="control__label">Inclinação <output data-output="tilt"></output></span>
+        <input type="range" data-setting="tilt" min="-40" max="60" step="1" />
+      </label>
+
+      <label class="control">
+        <span class="control__label">Exposição <output data-output="exposure"></output></span>
+        <input type="range" data-setting="exposure" min="0.3" max="2.5" step="0.05" />
+      </label>
+
+      <label class="control control--switch">
+        <span class="control__label">Rotação automática</span>
+        <input type="checkbox" data-setting="autoRotate" role="switch" />
+      </label>
+
+      <div class="controls__actions">
+        <button class="controls__button" id="pause-toggle" type="button" aria-pressed="false">Pausar</button>
+        <button class="controls__button" id="reset-camera" type="button">Resetar câmera</button>
+      </div>
+      <p class="controls__keys">Atalhos: <kbd>Espaço</kbd> pausa · <kbd>R</kbd> reseta · <kbd>Esc</kbd> fecha</p>
+    </form>
+  </aside>
+
+  <section class="gpu-help" id="gpu-help" data-kind="integrated" hidden aria-labelledby="gpu-help-title">
+    <button class="gpu-help__close" id="gpu-help-close" type="button" aria-label="Fechar">×</button>
+    <h2 class="gpu-help__title" id="gpu-help-title">Use a placa de vídeo dedicada</h2>
+    <p class="only-integrated">
+      O navegador está usando <strong class="js-gpu-name">a GPU integrada</strong>. Em notebooks com duas placas
+      de vídeo (por exemplo Intel/AMD + NVIDIA), o Windows costuma entregar a mais fraca ao navegador.
+      A galáxia continua funcionando, mas com menos estrelas.
+    </p>
+    <p class="only-software">
+      O navegador está desenhando a cena na <strong>CPU</strong>, sem usar a placa de vídeo. A galáxia foi
+      reduzida ao mínimo para não travar.
+    </p>
+    <p>
+      <strong>Jeito mais fácil (Windows):</strong> feche esta janela e dê dois cliques em <code>iniciar.bat</code>.
+      Ele abre o projeto numa janela do Chrome/Edge que pede a placa de alto desempenho.
+    </p>
+    <p>Ou configure o navegador manualmente:</p>
+    <ol>
+      <li>No Chrome, em <em>Configurações → Sistema</em>, ligue <em>Usar aceleração de gráficos quando disponível</em>.</li>
+      <li>
+        No Windows, abra <em>Configurações → Sistema → Tela → Elementos gráficos</em>, escolha o
+        <em>Google Chrome</em> → <em>Opções</em> → <em>Alto desempenho</em> → <em>Salvar</em>.
+      </li>
+      <li>
+        Ou cole na barra de endereço <code>chrome://flags/#force-high-performance-gpu</code>
+        <button class="gpu-help__copy" type="button" data-copy="chrome://flags/#force-high-performance-gpu">copiar</button>,
+        escolha <em>Enabled</em> e clique em <em>Relaunch</em>.
+      </li>
+      <li>Ligue o notebook na tomada e <strong>feche e abra o navegador de novo</strong>.</li>
+    </ol>
+    <p class="gpu-help__foot">
+      Deu certo quando o painel mostrar a placa dedicada com o ponto verde. No Microsoft Edge, use <code>edge://flags</code>.
+    </p>
+  </section>
+
+  <p class="loading" id="loading" role="status">Gerando a galáxia…</p>
+
+  <p class="hint" id="hint">Arraste para orbitar · Role ou use pinça para zoom</p>
+
+  <p class="fallback" id="fallback" hidden>
+    Seu navegador não conseguiu iniciar o WebGL 2.<br />
+    Use um Chrome, Edge ou Firefox atualizado, com aceleração de hardware ativada.
+  </p>
+
+  <section class="notice" id="file-notice" hidden>
+    <h2 class="notice__title">Abra pelo servidor local</h2>
+    <p>
+      O navegador bloqueia os módulos JavaScript quando o <code>index.html</code>
+      é aberto direto do disco (<code>file://</code>).
+    </p>
+    <ol>
+      <li><strong>Windows:</strong> dê dois cliques em <code>iniciar.bat</code>, na pasta do projeto.</li>
+      <li><strong>Qualquer sistema:</strong> rode <code>python -m http.server 8000</code> na pasta e abra <code>http://localhost:8000</code>.</li>
+    </ol>
+  </section>
+
+  <script>
+    // ES modules never load from file:// — explain it instead of showing a black screen.
+    if (location.protocol === 'file:') {
+      document.getElementById('file-notice').hidden = false;
+      document.getElementById('hud').hidden = true;
+      document.getElementById('hint').hidden = true;
+      document.getElementById('loading').hidden = true;
+    }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
