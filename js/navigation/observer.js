@@ -78,7 +78,7 @@ export function framingDistance(system, aspect) {
   }
   const tanV = Math.tan(THREE.MathUtils.degToRad(TELE_FOV / 2));
   const tanH = tanV * aspect;
-  const distance = Math.max(halfWidth / (FILL * tanH), halfHeight / (FILL * tanV));
+  const distance = Math.max(halfWidth / (FILL * tanH), halfHeight / (FILL * tanV)) * (system.entry.view?.framing ?? 1);
   // The near side looks bigger than the far side: a small margin.
   return THREE.MathUtils.clamp(distance * 1.07, system.radius * TELE_ABOVE, system.radius * 12);
 }

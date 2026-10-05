@@ -274,12 +274,15 @@ const esaHubble = (id) => ({ label: `ESA/Hubble ${id}`, url: `https://esahubble.
 // ---------------------------------------------------------------------------
 
 /*
- * view: how the system is framed when seen from the starting point (and from
- * the "home" position of the observation mode). The bodies of a system are
- * placed in a "picture frame": x to the right, y towards the observer, z
- * downwards, like the axes of the photograph. A body's orientation:
- * inclination (0 = face-on, ±90 = edge-on, the sign picks the near side),
- * positionAngle (screen rotation, counter-clockwise) and spin (arms phase).
+ * Every system is seen from the starting point like in its photograph. Its
+ * bodies are placed in a "picture frame" (frame.position): x to the right,
+ * y towards the observer, z downwards, like the axes of the image. A body's
+ * frame.orientation: inclination (0 = face-on, ±90 = edge-on, the sign picks
+ * the near side), positionAngle (screen rotation, counter-clockwise) and spin
+ * (phase of the arms). Optional view: { framing (× the home distance of the
+ * observation mode), roll (degrees) }. radius: size used for the level of
+ * detail and the selection (kpc, visual). starWeight: share of the quality
+ * profile's star budget (M31 = 1); lod: what the closest level shows.
  */
 export const GALAXY_CATALOG = [
   {
@@ -329,6 +332,7 @@ export const GALAXY_CATALOG = [
     seed: 4594,
     starWeight: 0.75,
     lod: 'Bojo gigante em camadas, disco fino com anel de poeira, halo com aglomerados globulares',
+    view: { framing: 1.45 }, // the photographs show its whole halo
     bodies: [
       discBody({
         name: 'M104',
@@ -809,12 +813,13 @@ export const GALAXY_CATALOG = [
     seed: 5128,
     starWeight: 0.65,
     lod: 'Esferoide gigante, disco de poeira empenado com aglomerados jovens',
+    view: { framing: 1.5 },
     bodies: [
       discBody({
         name: 'Centaurus A',
         seed: 5128,
         starWeight: 0.65,
-        frame: { orientation: { inclination: -70, positionAngle: 28, spin: 0 } },
+        frame: { orientation: { inclination: -83, positionAngle: 28, spin: 0 } },
         overrides: {
           static: true,
           mapRadius: 17,
@@ -830,15 +835,16 @@ export const GALAXY_CATALOG = [
             lanes: [0.62, 7, 0, 0],
             inner: [0, 0.78, 8, 0.8],
             dustRing: [7.6, 3.2, 1.3, 0],
-            dustEnv: [0.8, 2.2, 13, 15.5],
-            dustMix: [0.9, 0.55, 0.45, 0.25],
-            diffuseDust: [0.6, 7.5, 12, 15.5],
+            central: [0, 4, 0.9, 0], // the lane also crosses in front of the nucleus
+            dustEnv: [0, 0.6, 13, 15.5],
+            dustMix: [1.1, 0.8, 0.5, 0.1],
+            diffuseDust: [0.35, 7.5, 12, 15.5],
             warp: [0.08, 0.8, 0.45, 0.25],
             mix: [1.2, 1, 1.3, 0.2],
           },
           rotation: { corotation: 8, curveRadius: 1.2, bulge: 0.2, halo: 0.05 },
           orbits: { eccentricity: 0, eccWindow: [1, 2, 13, 15] },
-          disk: { scaleLength: 5.6, inner: 1, outer: 15, oldSigma: 0.36, youngSigma: 0.18, dustSigma: 0.38, flare: [0.8, 0.03], hotRadius: 3, hotFraction: 0.25 },
+          disk: { scaleLength: 5.6, inner: 1, outer: 15, oldSigma: 0.5, youngSigma: 0.35, dustSigma: 0.85, flare: [0.8, 0.03], hotRadius: 3, hotFraction: 0.25 },
           warp: { amp: 2.0, r0: 4, r1: 15.5, angle: 0.6 },
           light: {
             diskRadius: 15.6,
@@ -850,9 +856,9 @@ export const GALAXY_CATALOG = [
               { surface: 0.07, sigma: 13, q: 0.84, axes: [1, 0.84, 0.92], color: [0.96, 0.86, 0.72] },
             ],
             disk: 0.08,
-            young: 0.2,
-            hii: 0.14,
-            dust: 26,
+            young: 0.26,
+            hii: 0.18,
+            dust: 12,
             oldInner: [1.0, 0.86, 0.68],
             oldOuter: [1.0, 0.88, 0.74],
             oldRange: [3, 12],
@@ -910,10 +916,10 @@ export const GALAXY_CATALOG = [
           },
           stars: {
             shares: { bulge: 0.45, halo: 0.1, shells: 0.45, shellGlow: 0.08 },
-            brightness: { shells: 0.45, shellGlow: 0.012 },
+            brightness: { shells: 0.2, shellGlow: 0.009 },
             bulge: { scale: 1.2, max: 12, flattening: 0.9, depth: 0.95, nucleus: 0.02, nucleusRadius: 0.06, temperature: [0.15, 0.28] },
             halo: { inner: 3, outer: 34, flattening: 0.9, clusterRadius: 24, globularShare: 0.3 },
-            shellGlowSize: 2.0,
+            shellGlowSize: 1.5,
             shells: [
               { radius: 7, thickness: 0.07, axis: [1, 0.15, 0.2], opening: 0.6, weight: 0.7, flatten: 0.9 },
               { radius: 9.5, thickness: 0.07, axis: [-1, -0.1, -0.25], opening: 0.62, weight: 0.8, flatten: 0.92 },
@@ -1047,7 +1053,7 @@ export const GALAXY_CATALOG = [
     // Picture frame: x right, y towards the observer, z down (kpc).
     tidal: {
       starWeight: 0.19,
-      brightness: { stars: 0.8, glow: 0.014 },
+      brightness: { stars: 0.8, glow: 0.01 },
       glowShare: 0.05,
       streams: [
         {
@@ -1176,7 +1182,7 @@ export const GALAXY_CATALOG = [
     ],
     tidal: {
       starWeight: 0.08,
-      brightness: { stars: 0.75, glow: 0.014 },
+      brightness: { stars: 0.75, glow: 0.01 },
       glowShare: 0.05,
       streams: [
         {
@@ -1283,13 +1289,13 @@ export const GALAXY_CATALOG = [
     ],
     tidal: {
       starWeight: 0.1,
-      brightness: { stars: 0.75, glow: 0.014 },
+      brightness: { stars: 0.75, glow: 0.01 },
       glowShare: 0.05,
       streams: [
         {
           // Arm torn from NGC 3808 that wraps around the companion.
           points: [[-3, 0.5, -9], [5, 1.5, -10], [13, 2, -8], [20, 1, -3], [21, -1, 4], [16, -3, 8], [9, -3.5, 7]],
-          width: [1.4, 2.0],
+          width: [1.0, 1.4],
           weight: 1,
           young: 0.7,
           knots: 0.08,
@@ -1300,7 +1306,7 @@ export const GALAXY_CATALOG = [
         {
           // Faint ring of material around NGC 3808A, across its disc.
           points: [[14, -6, -1], [17.5, -2, -4], [14, 2.5, -2], [10.5, -2, 1.5], [14, -6, -1]],
-          width: [0.9, 0.9],
+          width: [0.6, 0.6],
           weight: 0.45,
           young: 0.5,
           knots: 0.05,
