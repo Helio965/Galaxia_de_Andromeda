@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { describeGpu } from './gpu.js';
 import { chooseQuality, createFrameRateGovernor } from './quality.js';
-import { createUniverse } from './universe/universe.js';
+import { createUniverse, createShaderWarmup } from './universe/universe.js';
 import { createLodManager } from './universe/lodManager.js';
 import { createBeacons } from './universe/beacons.js';
 import { createSpaceDust } from './universe/spaceDust.js';
@@ -555,6 +555,7 @@ async function start() {
   let exposure = 1;
   const fpsMeter = { frames: 0, elapsed: 0, value: 60 };
   const velocity = new THREE.Vector3();
+  const STILL = new THREE.Vector3();
   const lastPosition = camera.position.clone();
   let speed = 0;
   let hudTimer = 0;
@@ -645,7 +646,8 @@ async function start() {
     sky.update(skyTime, camera.position);
     state.aimed = state.mode === 'explore' ? aimedSystem() : null;
     beacons.update(camera.position, state.selected ?? state.aimed);
-    dust.update(camera.position, velocity);
+    // Speed cues only while flying (not for the slow orbit of the observation mode).
+    dust.update(camera.position, state.mode === 'observe' ? STILL : velocity);
 
     post.render(delta);
     if (screenshotRequested) {
@@ -702,12 +704,18 @@ async function start() {
 
   // Compile every shader before the first frame, in parallel where the
   // browser supports it (KHR_parallel_shader_compile), so the page never freezes.
+  // The star shaders of the galaxies not generated yet are compiled now too.
   setLoadingText('Preparando os shaders…');
+  const warmup = createShaderWarmup(maxPointSize);
+  scene.add(warmup.group);
   if (renderer.extensions.has('KHR_parallel_shader_compile')) {
     await renderer.compileAsync(scene, camera);
   } else {
     renderer.compile(scene, camera);
   }
+  // Removed from the scene but not disposed: disposing the materials would
+  // release the compiled programs that the galaxies will reuse.
+  scene.remove(warmup.group);
 
   frame();
   canvas.classList.add('is-ready');

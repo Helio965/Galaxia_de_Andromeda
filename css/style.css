@@ -1015,8 +1015,8 @@ body[data-mode="explore"] .crosshair {
 
 .debug {
   position: fixed;
-  top: 64px;
-  right: max(var(--gutter), env(safe-area-inset-right));
+  bottom: max(var(--gutter), env(safe-area-inset-bottom));
+  left: calc(max(var(--gutter), env(safe-area-inset-left)) + 176px);
   z-index: 12;
   margin: 0;
   padding: 10px 12px;

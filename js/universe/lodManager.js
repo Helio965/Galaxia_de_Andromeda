@@ -8,7 +8,7 @@ import * as THREE from 'three';
  * with P the pixels per radian of the current view and P₀ those of a 1080-pixel
  * high telephoto view (16°). So `apparent` 12 is a galaxy ~320 px in radius on
  * a 1080p screen, whatever the lens. Galaxies outside the field of view count
- * as 2.5× farther: their stars are not urgent.
+ * as 4× farther: their stars are not urgent.
  *
  *   LOD 0   apparent < 12    every star, sharpest map, most volume samples
  *   LOD 1   apparent < 22    ~75 % of the stars
@@ -32,7 +32,7 @@ const FRACTIONS = [1, 0.75, 0.4, 0, 0];
 const STEP_FRACTIONS = [1, 0.85, 0.6, 0.35, 0.15];
 const LOAD_BELOW = 55; // start generating the stars
 const KEEP_BELOW = 75; // keep them while the galaxy looks bigger than this
-const OFF_SCREEN = 2.5;
+const OFF_SCREEN = 4;
 const REFERENCE_PROJECTION = 1080 / (2 * Math.tan(THREE.MathUtils.degToRad(8)));
 const FADE_SPEED = 0.9; // per second
 const FRACTION_SPEED = 1.5;

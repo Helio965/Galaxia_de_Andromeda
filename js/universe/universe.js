@@ -1,6 +1,52 @@
 import * as THREE from 'three';
 import { GALAXY_CATALOG } from './galaxyCatalog.js';
 import { createGalaxySystem } from '../galaxies/galaxySystem.js';
+import { createSharedUniforms } from '../galaxies/galaxyBody.js';
+import { createStarBuffers, createStarPopulation } from '../galaxies/starPoints.js';
+
+// Every combination of star shader used by the galaxies (motion × sprite kind).
+const STAR_VARIANTS = [
+  ['ellipse', 'star'],
+  ['pattern', 'star'],
+  ['differential', 'star'],
+  [null, 'star'],
+  ['pattern', 'highlight'],
+  [null, 'highlight'],
+  ['pattern', 'nebula'],
+  [null, 'nebula'],
+  [null, 'glow'],
+];
+const WARMUP_SPEC = {
+  rotation: { patternPeriod: 600, corotation: 12, curveRadius: 1.4 },
+  orbits: { tanPitch: 0.2, ellipseOffset: 0, eccentricity: 0, eccWindow: [1, 2, 3, 4] },
+  mapRadius: 1,
+  light: { dust: 0 },
+  disk: null,
+};
+
+/**
+ * One tiny population of every star shader variant. Compiled with the rest
+ * of the scene at startup, so that a galaxy whose stars appear later (when
+ * the camera arrives) never stalls the frame on a shader compilation.
+ * The caller adds the group, compiles, then removes it — without disposing
+ * it, which would also release the compiled programs.
+ */
+export function createShaderWarmup(maxPointSize) {
+  const group = new THREE.Group();
+  const shared = createSharedUniforms(WARMUP_SPEC, maxPointSize);
+  const populations = STAR_VARIANTS.map(([motion, kind]) => {
+    const buffers = createStarBuffers(1);
+    buffers.set(0, 1, 0, 0, 1, 0, 0.5, 0.5);
+    return createStarPopulation({ name: `Warmup-${motion}-${kind}`, buffers, sharedUniforms: shared, motion, kind });
+  });
+  for (const population of populations) group.add(population.points);
+  return {
+    group,
+    dispose() {
+      for (const population of populations) population.dispose();
+    },
+  };
+}
 
 /**
  * The navigable universe: one galaxy system per catalog entry, all of them
