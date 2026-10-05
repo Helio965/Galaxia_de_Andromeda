@@ -1,65 +1,67 @@
 import * as THREE from 'three';
-import { createRandom, hernquistRadius, luminosity, randomDirection, shuffledIndices } from './random.js';
+import { createRandom, hernquistRadius, luminosity, randomDirection, shuffledIndices } from '../random.js';
 import { createStarBuffers, createStarPopulation } from './starPoints.js';
-import { satelliteVertex, satelliteFragment } from './shaders/satellite.glsl.js';
+import { satelliteVertex, satelliteFragment } from '../shaders/satellite.glsl.js';
+import { STEP_MASK } from '../work.js';
 
 const SQRT_2PI = Math.sqrt(2 * Math.PI);
 
 /**
- * M32 and M110 (NGC 205), the two satellites seen next to M31 in the photos.
- * Positions are in the galaxy frame: M32 just outside the near side of the
- * disc, M110 further away above the far side. Small, warm and discreet: they
- * add context without stealing the focus.
+ * Small companion ellipticals that live inside a galaxy's frame: M32 and M110
+ * (NGC 205) next to M31. Small, warm and discreet: they add context without
+ * stealing the focus.
+ *
+ * Their diffuse glow (two Gaussian ellipsoids integrated along each pixel's
+ * ray) exists for the whole life of the galaxy, so they are visible from afar;
+ * their stars are generated with the rest of the galaxy when the camera gets
+ * close (see galaxyBody.js).
+ *
+ * A satellite spec: name, center, rotation, axes, scale/max (Hernquist radius of
+ * the stars), share of the stars, starBrightness, core/envelope (sigma, surface,
+ * colour), temperature range.
  */
-const SATELLITES = [
-  {
-    name: 'M32',
-    center: [1.6, -2.4, 8.2],
-    rotation: [0.3, 0.6, 0.15],
-    axes: [1, 0.8, 0.86], // compact E2 elliptical
-    scale: 0.22, // Hernquist scale radius of the stars (kpc)
-    max: 1.8,
-    share: 0.32, // share of the satellite stars
-    starBrightness: 0.9, // compact and bright: a few resolved giants on top of the glow
-    core: { sigma: 0.12, surface: 1.5, color: [1.0, 0.95, 0.88] },
-    envelope: { sigma: 0.5, surface: 0.3, color: [1.0, 0.88, 0.72] },
-    temperature: [0.2, 0.45],
-  },
-  {
-    name: 'M110',
-    center: [-2.8, 4.6, -6.2],
-    rotation: [0.5, -0.4, 0.9],
-    axes: [1, 0.5, 0.62], // elongated E5 / dwarf spheroidal
-    scale: 0.65,
-    max: 4.2,
-    share: 0.68,
-    starBrightness: 0.4, // diffuse: the glow dominates
-    core: { sigma: 0.22, surface: 0.36, color: [1.0, 0.93, 0.84] },
-    envelope: { sigma: 0.95, surface: 0.2, color: [0.96, 0.88, 0.76] },
-    temperature: [0.22, 0.55],
-  },
-];
-
-export function createSatellites({ count, seed, sharedUniforms, brightness }) {
-  const random = createRandom(seed, 5);
+export function createSatelliteGlows({ specs, sharedUniforms }) {
   const group = new THREE.Group();
   group.name = 'Satellites';
+  const glows = specs.map((spec) => createGlow(spec, frameOf(spec), sharedUniforms));
+  for (const glow of glows) group.add(glow.mesh);
 
-  // --- Stars: one population for both satellites (one draw call) -----------------------
+  const cameraLocal = new THREE.Vector3();
+  return {
+    group,
+    setIntensity(value) {
+      for (const glow of glows) glow.uniforms.uIntensity.value = value;
+    },
+    /** @param {THREE.Vector3} cameraGalaxy camera position in the galaxy frame */
+    update(cameraGalaxy) {
+      for (const glow of glows) {
+        glow.uniforms.uCamera.value.copy(glow.inverse.apply(cameraGalaxy, cameraLocal));
+      }
+    },
+    dispose() {
+      for (const glow of glows) {
+        glow.mesh.geometry.dispose();
+        glow.mesh.material.dispose();
+      }
+    },
+  };
+}
+
+/** Stars of every satellite in one population (one draw call). */
+export async function buildSatelliteStars({ count, specs, seed, name, sharedUniforms, brightness, work }) {
+  const random = createRandom(seed, 5);
   const buffers = createStarBuffers(count);
   const order = shuffledIndices(count, random);
   const dir = { x: 0, y: 0, z: 0 };
   const local = new THREE.Vector3();
   let n = 0;
 
-  const glows = SATELLITES.map((spec, index) => {
-    const frame = new THREE.Object3D();
-    frame.position.fromArray(spec.center);
-    frame.rotation.fromArray(spec.rotation);
-    frame.updateMatrix();
-
-    const members = index === SATELLITES.length - 1 ? count - n : Math.round(count * spec.share);
+  for (let index = 0; index < specs.length; index++) {
+    const spec = specs[index];
+    const frame = frameOf(spec);
+    const members = index === specs.length - 1 ? count - n : Math.round(count * spec.share);
     for (let k = 0; k < members; k++, n++) {
+      if ((n & STEP_MASK) === 0) await work.step();
       const r = hernquistRadius(random, spec.scale, spec.max);
       randomDirection(random, dir);
       local.set(dir.x * r * spec.axes[0], dir.y * r * spec.axes[1], dir.z * r * spec.axes[2]);
@@ -77,34 +79,22 @@ export function createSatellites({ count, seed, sharedUniforms, brightness }) {
         random(),
       );
     }
+  }
 
-    return createGlow(spec, frame, sharedUniforms);
-  });
-
-  for (const glow of glows) group.add(glow.mesh);
-
-  const stars = createStarPopulation({
-    name: 'SatelliteStars',
+  return createStarPopulation({
+    name: `${name}SatelliteStars`,
     buffers,
     sharedUniforms,
     brightness,
   });
-  group.add(stars.points);
+}
 
-  const cameraLocal = new THREE.Vector3();
-  return {
-    group,
-    stars,
-    setIntensity(value) {
-      for (const glow of glows) glow.uniforms.uIntensity.value = value;
-    },
-    /** @param {THREE.Vector3} cameraGalaxy camera position in the galaxy frame */
-    update(cameraGalaxy) {
-      for (const glow of glows) {
-        glow.uniforms.uCamera.value.copy(glow.inverse.apply(cameraGalaxy, cameraLocal));
-      }
-    },
-  };
+function frameOf(spec) {
+  const frame = new THREE.Object3D();
+  frame.position.fromArray(spec.center);
+  frame.rotation.fromArray(spec.rotation);
+  frame.updateMatrix();
+  return frame;
 }
 
 function createGlow(spec, frame, sharedUniforms) {

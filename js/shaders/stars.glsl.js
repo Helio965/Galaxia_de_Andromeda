@@ -31,12 +31,15 @@ export const galaxyStarVertex = /* glsl */ `
   uniform float uTanPitch;
   uniform float uEllipseOffset;
   uniform float uEccentricity;
+  uniform vec4 uEccWindow;      // radii where the orbits are elliptical (in0, in1, out0, out1)
   uniform float uMotionScale;   // differential rotation: fraction of the circular speed
   uniform float uSizeScale;     // viewport height / 1080 (stars keep their look at any resolution)
+  uniform float uProjScale;     // pixels per radian (glow sprites have a true size)
   uniform float uRefDepth;      // depth at which aStar.x is the size in pixels
   uniform float uMinSize;
   uniform float uMaxSize;
   uniform float uBrightness;    // population brightness (settings, density compensation)
+  uniform float uFade;          // whole galaxy fading in (level of detail)
   uniform float uSpriteScale;   // highlight / nebula sprites are larger than their core
 
   // position: the star in the galaxy frame (pattern frame for MOTION_PATTERN).
@@ -44,7 +47,7 @@ export const galaxyStarVertex = /* glsl */ `
   attribute vec4 aStar; // x: size (px at uRefDepth), y: brightness, z: temperature, w: seed
 
   varying vec3 vColor;
-  #if defined(HIGHLIGHT) || defined(NEBULA)
+  #if defined(HIGHLIGHT) || defined(NEBULA) || defined(GLOW)
   varying float vCore;
   varying float vPixel; // one pixel, in sprite units (gl_PointCoord * 2)
   #endif
@@ -60,7 +63,7 @@ export const galaxyStarVertex = /* glsl */ `
       float a = position.x;
       float omega = angularSpeed(a);
       float phase = position.y + SPIN * (omega - uPatternSpeed) * uTime;
-      float e = uEccentricity * smoothstep(2.0, 5.0, a) * (1.0 - smoothstep(17.0, 24.0, a));
+      float e = uEccentricity * smoothstep(uEccWindow.x, uEccWindow.y, a) * (1.0 - smoothstep(uEccWindow.z, uEccWindow.w, a));
       float orientation = log(a) / uTanPitch + uEllipseOffset + uPatternAngle;
       vec2 q = rotate2(vec2(a * cos(phase), a * (1.0 - e) * sin(phase)), orientation);
       // Slow vertical oscillation through the disc.
@@ -86,13 +89,19 @@ export const galaxyStarVertex = /* glsl */ `
     float perspective = clamp(uRefDepth / depth, 0.05, 12.0);
     float size = aStar.x * uSizeScale * pow(perspective, 0.6);
     float flux = aStar.y * pow(perspective, 0.45);
+    #ifdef GLOW
+      // Extended light (tidal tails, shells): a true world size and a constant
+      // surface brightness, like any diffuse object.
+      size = aStar.x * uProjScale / depth; // aStar.x: diameter in kpc
+      flux = aStar.y;
+    #endif
 
     // Sub-pixel stars are drawn at the minimum size and dimmed instead, so their
     // total light is kept and they do not shimmer.
     float energy = size < uMinSize ? (size * size) / (uMinSize * uMinSize) : 1.0;
     size = max(size, uMinSize);
 
-    #if defined(HIGHLIGHT) || defined(NEBULA)
+    #if defined(HIGHLIGHT) || defined(NEBULA) || defined(GLOW)
       float sprite = min(size * uSpriteScale, uMaxSize * 2.0);
       vCore = size / sprite;
       vPixel = 2.0 / sprite;
@@ -111,7 +120,7 @@ export const galaxyStarVertex = /* glsl */ `
     #endif
 
     vec3 dust = dustTransmittance(p);
-    vColor = color * (flux * energy * nearFade * uBrightness) * dust;
+    vColor = color * (flux * energy * nearFade * uBrightness * uFade) * dust;
 
     // Nothing to draw: move it out of the clip volume (skips rasterisation).
     if (max(vColor.r, max(vColor.g, vColor.b)) < 1e-5) gl_Position = vec4(2.0, 2.0, 2.0, 1.0);

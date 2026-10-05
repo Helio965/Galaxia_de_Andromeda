@@ -1,8 +1,8 @@
-import { createRandom, exponentialDiscRadius, gaussian, luminosity, shuffledIndices } from './random.js';
+import { createRandom, exponentialDiscRadius, gaussian, luminosity, shuffledIndices } from '../random.js';
 import { createStarBuffers, createStarPopulation } from './starPoints.js';
-import { MODEL } from './config.js';
+import { warpHeight } from './stellarDisk.js';
+import { STEP_MASK } from '../work.js';
 
-const ASSOCIATION_FRACTION = 0.32; // share of young stars born in OB associations
 const MAX_TRIES = 64;
 
 /**
@@ -14,10 +14,20 @@ const MAX_TRIES = 64;
  *
  * Everything is placed by rejection sampling on the procedural map, so the
  * stars, the blue diffuse light and the dust lanes all agree. Positions are
- * in the frame of the spiral pattern, which turns rigidly (MOTION_PATTERN).
+ * in the frame of the spiral pattern, which turns rigidly (MOTION_PATTERN),
+ * or frozen in place for galaxies caught in an interaction.
+ *
+ * The same code draws every young structure of the explorer: arms, the ring
+ * of Hoag's Object, the ends of a bar, the knots of the Antennae.
+ * spec.stars.arms: scale, inner, outer (radial sampling), associations,
+ * knotScale, knotInner, knotOuter, spread (cluster size multiplier).
  */
-export function createSpiralArms({ counts, seed, sampler, sharedUniforms, brightness }) {
-  const random = createRandom(seed, 3);
+export async function buildSpiralArms({ counts, spec, sampler, sharedUniforms, brightness, work }) {
+  const params = spec.stars.arms;
+  const youngSigma = spec.disk.youngSigma;
+  const random = createRandom(spec.seed, 3);
+  const motion = spec.static ? null : 'pattern';
+  const lift = (x, z) => warpHeight(spec.warp, x, z);
 
   // --- Sampling helpers ------------------------------------------------------------
   const point = { x: 0, z: 0 };
@@ -47,19 +57,23 @@ export function createSpiralArms({ counts, seed, sampler, sharedUniforms, bright
   // --- Young stars: field + associations -------------------------------------------------
   const count = counts.arms;
   const buffers = createStarBuffers(count);
-  const fieldCount = Math.round(count * (1 - ASSOCIATION_FRACTION));
+  const fieldCount = Math.round(count * (1 - params.associations));
   const order = shuffledIndices(count, random); // mixed order: any prefix is a fair sample
   let n = 0;
 
   for (; n < fieldCount; n++) {
-    const p = pickWhere(young, 6.2, 2.8, 25, 1.25);
+    if ((n & STEP_MASK) === 0) await work.step();
+    const p = pickWhere(young, params.scale, params.inner, params.outer, 1.25);
     const temperature = youngTemperature();
     const bright = luminosity(random, 3.3) * (temperature < 0.15 ? 1.8 : 1);
+    const x = p.x + gaussian(random) * 0.06;
+    const y = gaussian(random) * youngSigma;
+    const z = p.z + gaussian(random) * 0.06;
     buffers.set(
       order[n],
-      p.x + gaussian(random) * 0.06,
-      gaussian(random) * MODEL.youngSigma,
-      p.z + gaussian(random) * 0.06,
+      x,
+      y + lift(x, z),
+      z,
       1.2 + 0.9 * random() + 0.7 * bright,
       bright,
       temperature,
@@ -69,18 +83,20 @@ export function createSpiralArms({ counts, seed, sampler, sharedUniforms, bright
 
   const centers = [];
   while (n < count) {
-    const c = pickWhere(knots, 6.5, 3.2, 24, 1.1);
+    await work.step();
+    const c = pickWhere(knots, params.knotScale, params.knotInner, params.knotOuter, 1.1);
     const cx = c.x;
     const cz = c.z;
     centers.push([cx, cz]);
     const members = Math.min(count - n, 18 + Math.floor(random() * 50));
-    const spread = 0.07 + 0.16 * random();
+    const spread = (0.07 + 0.16 * random()) * params.spread;
+    const base = lift(cx, cz);
     for (let k = 0; k < members; k++, n++) {
       const bright = luminosity(random, 2.8);
       buffers.set(
         order[n],
         cx + gaussian(random) * spread,
-        gaussian(random) * MODEL.youngSigma * 0.6,
+        gaussian(random) * youngSigma * 0.6 + base,
         cz + gaussian(random) * spread,
         1.3 + 0.9 * random() + 0.8 * bright,
         bright * 1.15,
@@ -91,10 +107,10 @@ export function createSpiralArms({ counts, seed, sampler, sharedUniforms, bright
   }
 
   const stars = createStarPopulation({
-    name: 'ArmStars',
+    name: `${spec.name}ArmStars`,
     buffers,
     sharedUniforms,
-    motion: 'pattern',
+    motion,
     brightness: brightness.arms,
   });
 
@@ -109,7 +125,7 @@ export function createSpiralArms({ counts, seed, sampler, sharedUniforms, bright
       x = cx + gaussian(random) * 0.15;
       z = cz + gaussian(random) * 0.15;
     } else {
-      const p = pickWhere(young, 6.2, 3, 24, 1.4);
+      const p = pickWhere(young, params.scale, params.knotInner - 0.2, params.knotOuter, 1.4);
       x = p.x;
       z = p.z;
     }
@@ -117,7 +133,7 @@ export function createSpiralArms({ counts, seed, sampler, sharedUniforms, bright
     highlightBuffers.set(
       i,
       x,
-      gaussian(random) * MODEL.youngSigma,
+      gaussian(random) * youngSigma + lift(x, z),
       z,
       1.5 + 1.0 * random(),
       0.5 + 1.3 * Math.pow(random(), 2.5),
@@ -126,10 +142,10 @@ export function createSpiralArms({ counts, seed, sampler, sharedUniforms, bright
     );
   }
   const highlights = createStarPopulation({
-    name: 'Supergiants',
+    name: `${spec.name}Supergiants`,
     buffers: highlightBuffers,
     sharedUniforms,
-    motion: 'pattern',
+    motion,
     kind: 'highlight',
     spriteScale: 9,
     brightness: brightness.highlights,
@@ -145,14 +161,14 @@ export function createSpiralArms({ counts, seed, sampler, sharedUniforms, bright
       x = cx + gaussian(random) * 0.1;
       z = cz + gaussian(random) * 0.1;
     } else {
-      const p = pickWhere(knots, 6.5, 3.2, 24, 1.5);
+      const p = pickWhere(knots, params.knotScale, params.knotInner, params.knotOuter, 1.5);
       x = p.x;
       z = p.z;
     }
     nebulaBuffers.set(
       i,
       x,
-      gaussian(random) * MODEL.youngSigma * 0.5,
+      gaussian(random) * youngSigma * 0.5 + lift(x, z),
       z,
       5 + 12 * random(), // sprite size in px at the reference distance
       0.4 + 0.6 * random(),
@@ -161,10 +177,10 @@ export function createSpiralArms({ counts, seed, sampler, sharedUniforms, bright
     );
   }
   const nebulae = createStarPopulation({
-    name: 'HIIRegions',
+    name: `${spec.name}HIIRegions`,
     buffers: nebulaBuffers,
     sharedUniforms,
-    motion: 'pattern',
+    motion,
     kind: 'nebula',
     brightness: brightness.nebulae,
   });

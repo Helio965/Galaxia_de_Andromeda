@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { galaxyStarVertex, starFragment, highlightFragment, nebulaFragment } from './shaders/stars.glsl.js';
-import { SPIN } from './config.js';
+import { galaxyStarVertex, starFragment, highlightFragment, nebulaFragment } from '../shaders/stars.glsl.js';
+import { SPIN } from '../config.js';
 
-const FRAGMENTS = { star: starFragment, highlight: highlightFragment, nebula: nebulaFragment };
+const FRAGMENTS = { star: starFragment, highlight: highlightFragment, nebula: nebulaFragment, glow: nebulaFragment };
 
 /**
  * Packs the per-star data of one population into typed arrays.
@@ -36,7 +36,7 @@ export function createStarBuffers(count) {
  *
  * @param {object} options
  * @param {'ellipse'|'pattern'|'differential'|null} options.motion see stars.glsl.js
- * @param {'star'|'highlight'|'nebula'} options.kind fragment shader
+ * @param {'star'|'highlight'|'nebula'|'glow'} options.kind fragment shader
  */
 export function createStarPopulation({
   name,
@@ -48,6 +48,7 @@ export function createStarPopulation({
   motionScale = 1,
   spriteScale = 1,
   compensation = 0.5,
+  extraDefines = null,
 }) {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(buffers.position, 3));
@@ -66,6 +67,8 @@ export function createStarPopulation({
   if (motion) defines[`MOTION_${motion.toUpperCase()}`] = '';
   if (kind === 'highlight') defines.HIGHLIGHT = '';
   if (kind === 'nebula') defines.NEBULA = '';
+  if (kind === 'glow') defines.GLOW = ''; // soft diffuse sprite with the colour of the stars
+  if (extraDefines) Object.assign(defines, extraDefines);
 
   const material = new THREE.ShaderMaterial({
     name: `${name}Material`,
