@@ -153,8 +153,16 @@ export const galaxyMapChunk = /* glsl */ `
   uniform float uDustSigma;
   uniform float uDustMaxColumn; // caps grazing sight lines (kpc)
   uniform vec3 uCamLocal;       // camera position in the galaxy frame
+  uniform vec4 uDiskWarp;       // warped discs (Centaurus A, tidal systems): amplitude, r0, r1, angle
 
   const vec3 DUST_REDDENING = vec3(0.66, 1.0, 1.45);
+
+  // Height of the (warped) mid-plane: an integral-sign warp growing outwards.
+  float diskWarp(vec2 xz) {
+    if (uDiskWarp.x == 0.0) return 0.0;
+    float r = length(xz);
+    return uDiskWarp.x * smoothstep(uDiskWarp.y, uDiskWarp.z, r) * sin(atan(xz.y, xz.x) - uDiskWarp.w);
+  }
 
   vec2 rotate2(vec2 v, float a) {
     float c = cos(a);
@@ -174,11 +182,13 @@ export const galaxyMapChunk = /* glsl */ `
   vec3 dustTransmittance(vec3 p) {
     vec3 d = uCamLocal - p;
     float len = length(d);
+    // Heights measured from the (possibly warped) mid-plane under the star.
+    float plane = diskWarp(p.xz);
     // Column of the Gaussian layer crossed by the segment, in kpc.
-    float column = min(len * gaussMean(p.y, uCamLocal.y, uDustSigma), uDustMaxColumn);
+    float column = min(len * gaussMean(p.y - plane, uCamLocal.y - plane, uDustSigma), uDustMaxColumn);
     if (column < 1e-4 || uDustStrength <= 0.0) return vec3(1.0);
     // The dust density is read where the sight line crosses the mid-plane.
-    float t = abs(d.y) > 1e-4 ? clamp(-p.y / d.y, 0.0, 1.0) : 0.0;
+    float t = abs(d.y) > 1e-4 ? clamp((plane - p.y) / d.y, 0.0, 1.0) : 0.0;
     // Grazing lines of sight stay long inside the layer: look a bit further along.
     float grazing = 1.0 - smoothstep(0.05, 0.3, abs(d.y) / max(len, 1e-4));
     t = mix(t, min(t + 2.5 / max(len, 1e-3), 1.0), grazing);

@@ -8,20 +8,18 @@
  *
  * Particle counts were chosen from the per-frame work they generate (vertices,
  * blended fragments, volume samples): ULTRA keeps a dedicated laptop GPU
- * (RTX 3050 class) well under 16 ms at 1080p.
+ * (RTX 3050 class) well under 16 ms at 1080p with M31 at full detail.
  */
 
 export const PROFILES = {
   ultra: {
     name: 'ultra',
-    bulge: 80000, // core + bulge stars
-    disk: 140000, // old disc on density-wave orbits
-    arms: 100000, // young blue population, OB associations included
-    highlights: 1400, // bright supergiants with a halo
-    nebulae: 700, // faint HII glows along the arms
-    halo: 14000, // halo stars, globular clusters included
-    globulars: 140,
-    satellites: 20000, // M32 + M110
+    // Stars of a galaxy of weight 1 (M31): 356 k, split between bulge, disc,
+    // arms, supergiants, HII regions, halo and satellites (see the catalog).
+    galaxyStars: 356000,
+    maxDrawnStars: 560000, // all galaxies together, at the same time
+    maxLoadedSystems: 3, // galaxies holding their stars in memory
+    workBudgetMs: 7, // star generation per frame (time slicing)
     background: 45000,
     brightStars: 420,
     galaxies: 260, // faint background galaxies
@@ -34,14 +32,10 @@ export const PROFILES = {
   },
   high: {
     name: 'high',
-    bulge: 55000,
-    disk: 90000,
-    arms: 65000,
-    highlights: 1000,
-    nebulae: 500,
-    halo: 9000,
-    globulars: 110,
-    satellites: 13000,
+    galaxyStars: 233000,
+    maxDrawnStars: 360000,
+    maxLoadedSystems: 3,
+    workBudgetMs: 6,
     background: 32000,
     brightStars: 320,
     galaxies: 160,
@@ -54,14 +48,10 @@ export const PROFILES = {
   },
   medium: {
     name: 'medium',
-    bulge: 30000,
-    disk: 50000,
-    arms: 35000,
-    highlights: 600,
-    nebulae: 300,
-    halo: 5000,
-    globulars: 80,
-    satellites: 7000,
+    galaxyStars: 128000,
+    maxDrawnStars: 190000,
+    maxLoadedSystems: 2,
+    workBudgetMs: 5,
     background: 18000,
     brightStars: 220,
     galaxies: 80,
@@ -74,14 +64,10 @@ export const PROFILES = {
   },
   low: {
     name: 'low',
-    bulge: 15000,
-    disk: 25000,
-    arms: 17000,
-    highlights: 300,
-    nebulae: 150,
-    halo: 2500,
-    globulars: 50,
-    satellites: 4000,
+    galaxyStars: 64000,
+    maxDrawnStars: 90000,
+    maxLoadedSystems: 2,
+    workBudgetMs: 4,
     background: 9000,
     brightStars: 140,
     galaxies: 0,
@@ -93,11 +79,6 @@ export const PROFILES = {
     finish: false,
   },
 };
-
-/** Total number of stars drawn for the galaxy itself (without the sky). */
-export function galaxyStarCount(profile) {
-  return profile.bulge + profile.disk + profile.arms + profile.highlights + profile.halo + profile.satellites;
-}
 
 /**
  * @param {{ kind: string, tier: string }} gpu result of describeGpu()

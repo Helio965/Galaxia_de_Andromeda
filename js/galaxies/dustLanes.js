@@ -1,9 +1,7 @@
-import { MODEL, LIGHT } from './config.js';
-
 /**
  * Dust lanes.
  *
- * Where: channel R of the procedural map (galaxyMap.js / shaders/map.glsl.js):
+ * Where: channel R of the procedural map of each galaxy (galaxyMap.js, map.glsl.js):
  * lanes on the inner edge of the arms, the dust ring near 10 kpc, tight arcs
  * around the bulge, broken into filaments and patches by noise.
  *
@@ -19,15 +17,15 @@ import { MODEL, LIGHT } from './config.js';
  * Seen at M31's inclination (~77°), a sight line crosses ~4× more dust than
  * face-on, which is why the lanes stand out so clearly in the photographs.
  */
-export function createDustUniforms() {
+export function createDustUniforms(spec) {
   return {
-    uDustStrength: { value: LIGHT.dust },
-    uDustSigma: { value: MODEL.dustSigma },
+    uDustStrength: { value: spec.light.dust ?? 0 },
+    uDustSigma: { value: spec.disk ? spec.disk.dustSigma : 0.1 },
     uDustMaxColumn: { value: 3.5 },
   };
 }
 
 /** @param {number} level 0 = no dust, 1 = default, 2 = twice as opaque */
-export function setDustLevel(uniforms, level) {
-  uniforms.uDustStrength.value = LIGHT.dust * level;
+export function setDustLevel(uniforms, spec, level) {
+  uniforms.uDustStrength.value = (spec.light.dust ?? 0) * level;
 }

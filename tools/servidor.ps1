@@ -1,5 +1,5 @@
 ﻿<#
-  Mini servidor local para abrir o Andromeda Galaxy no navegador, sem instalar nada.
+  Mini servidor local para abrir o Galaxy Explorer no navegador, sem instalar nada.
 
   Os módulos JavaScript (ES Modules) não carregam quando o index.html é aberto
   direto do disco (file://). Este script serve a pasta do projeto em
@@ -157,7 +157,7 @@ function Request-HighPerformanceGpu([string]$exe, [string]$stateDir) {
   Write-Host '  PLACA DE VÍDEO DE ALTO DESEMPENHO'
   Write-Host '  ------------------------------------------------------------------------'
   Write-Host '  Em notebooks com duas placas de vídeo (ex.: Intel + NVIDIA), o Windows'
-  Write-Host '  costuma rodar o navegador na placa mais fraca e a galáxia fica lenta.'
+  Write-Host '  costuma rodar o navegador na placa mais fraca e as galáxias ficam lentas.'
   Write-Host ''
   Write-Host '  Posso pedir ao Windows que use a placa de alto desempenho SOMENTE neste'
   Write-Host '  navegador. O que será gravado (apenas no seu usuário):'
@@ -249,7 +249,7 @@ $url = "http://localhost:$Port/"
 if ($Quality) { $url += "?quality=$Quality" }
 
 Write-Host ''
-Write-Host '  ANDROMEDA GALAXY - servidor local'
+Write-Host '  GALAXY EXPLORER - servidor local'
 Write-Host "  Endereço: $url"
 Write-Host '  Deixe esta janela aberta enquanto usa o projeto. Para parar: feche-a ou pressione Ctrl+C.'
 Write-Host ''

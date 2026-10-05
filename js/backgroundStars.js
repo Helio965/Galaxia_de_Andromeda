@@ -2,18 +2,23 @@ import * as THREE from 'three';
 import { skyVertex, skyGalaxyFragment } from './shaders/sky.glsl.js';
 import { starFragment, highlightFragment } from './shaders/stars.glsl.js';
 import { createRandom, gaussian, luminosity, randomDirection } from './random.js';
+import { skyDirection as celestialDirection } from './universe/galaxyCatalog.js';
 
-const INNER = 900; // shells well beyond the galaxy (the camera stays within ~240)
+const INNER = 900; // shells around the camera, well beyond the galaxies nearby
 const OUTER = 5000;
-// Our galaxy's plane passes ~21° from M31 on the sky: foreground stars are
-// denser along it. Normal chosen so the band crosses the sky behind M31.
-const MILKY_WAY_NORMAL = new THREE.Vector3(0.35, 0.87, -0.36).normalize();
+// Foreground stars of our own Galaxy are denser along its plane. The explorer
+// uses the real sky directions (celestial north = +Y), so the band is placed
+// around the real north galactic pole (RA 192.86°, Dec +27.13°).
+const MILKY_WAY_NORMAL = new THREE.Vector3(...celestialDirection(192.85948, 27.12825));
+// The sky travels with the camera, only slightly slower: a hint of parallax
+// on long flights, without ever flying through it.
+const PARALLAX = 0.97;
 
 /**
- * The sky around M31: tens of thousands of stars of our own galaxy (faint,
+ * The starry background: tens of thousands of stars of our own Galaxy (faint,
  * irregular, of slightly different colours and distances), a few hundred
- * bright ones with a halo, and faint background galaxies. Fixed in the world
- * frame: tilting M31 does not tilt the sky.
+ * bright ones with a halo, and faint background galaxies. A visual backdrop:
+ * it surrounds the camera wherever it flies.
  */
 export function createBackgroundSky({ quality, seed }) {
   const random = createRandom(seed, 6);
@@ -89,8 +94,9 @@ export function createBackgroundSky({ quality, seed }) {
     setViewport(heightPixels) {
       shared.uSizeScale.value = heightPixels / 1080;
     },
-    update(time) {
+    update(time, cameraPosition) {
       shared.uTime.value = time;
+      if (cameraPosition) group.position.copy(cameraPosition).multiplyScalar(PARALLAX);
     },
   };
 }

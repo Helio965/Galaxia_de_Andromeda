@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#01030a" />
-  <meta name="description" content="Visualização procedural interativa da Galáxia de Andrômeda (M31) em tempo real, com Three.js, WebGL 2 e shaders GLSL." />
-  <title>Andromeda Galaxy · M31 em WebGL</title>
+  <meta name="description" content="Galaxy Explorer: exploração 3D interativa e procedural de galáxias reais (Andrômeda, Sombreiro, Antenas, Objeto de Hoag...) em tempo real, com Three.js, WebGL 2 e shaders GLSL." />
+  <title>Galaxy Explorer · Galáxias em 3D</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2301030a'/%3E%3Cellipse cx='32' cy='32' rx='27' ry='9' transform='rotate(-28 32 32)' fill='%238fb0ff' opacity='.55'/%3E%3Cellipse cx='32' cy='32' rx='17' ry='5.5' transform='rotate(-28 32 32)' fill='%23ffe6b8' opacity='.8'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23fff8ea'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="css/style.css" />
 
@@ -20,22 +20,41 @@
   </script>
 </head>
 <body>
-  <canvas id="scene" aria-label="Simulação 3D interativa da Galáxia de Andrômeda"></canvas>
+  <canvas id="scene" aria-label="Exploração 3D interativa de galáxias"></canvas>
 
-  <aside class="hud" id="hud" aria-label="Andromeda Galaxy">
+  <div class="labels" id="labels" aria-hidden="true"></div>
+  <div class="crosshair" aria-hidden="true"></div>
+
+  <aside class="hud" id="hud" aria-label="Galaxy Explorer">
     <header class="hud__header">
-      <h1 class="hud__title">ANDROMEDA</h1>
-      <p class="hud__subtitle">M31 · NGC 224 · Andrômeda</p>
+      <h1 class="hud__title">GALAXY EXPLORER</h1>
+      <p class="hud__subtitle"><span id="mode-value">Observação</span> · <kbd>TAB</kbd> alterna</p>
     </header>
 
     <dl class="hud__stats" id="hud-stats">
-      <div class="hud__row" id="gpu-status" data-kind="other">
-        <dt>GPU</dt>
-        <dd><span class="hud__dot" aria-hidden="true"></span><span class="hud__gpu-name" id="gpu-name">detectando…</span></dd>
+      <div class="hud__row hud__row--galaxy">
+        <dt>Galáxia</dt>
+        <dd id="galaxy-value">—</dd>
+      </div>
+      <div class="hud__row">
+        <dt>Distância</dt>
+        <dd id="distance-value" title="Distância real até a Terra">—</dd>
+      </div>
+      <div class="hud__row">
+        <dt>Na cena</dt>
+        <dd id="scene-distance-value" title="Distância da câmera na cena (u ≈ 1 kpc dentro das galáxias; entre galáxias a escala é comprimida)">—</dd>
+      </div>
+      <div class="hud__row">
+        <dt>Velocidade</dt>
+        <dd id="speed-value">—</dd>
       </div>
       <div class="hud__row">
         <dt>FPS</dt>
         <dd id="fps-value">—</dd>
+      </div>
+      <div class="hud__row" id="gpu-status" data-kind="other">
+        <dt>GPU</dt>
+        <dd><span class="hud__dot" aria-hidden="true"></span><span class="hud__gpu-name" id="gpu-name">detectando…</span></dd>
       </div>
       <div class="hud__row">
         <dt>Perfil</dt>
@@ -48,14 +67,19 @@
     </dl>
     <button class="hud__link" id="gpu-help-open" type="button" hidden>Está lento? Use a placa de vídeo dedicada</button>
 
-    <button class="hud__toggle" id="controls-toggle" type="button" aria-expanded="false" aria-controls="controls">
-      Controles
-      <svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" /></svg>
-    </button>
+    <div class="hud__buttons">
+      <button class="hud__toggle" id="galaxy-toggle" type="button" aria-expanded="false" aria-controls="galaxy-panel">
+        Galáxias <kbd>G</kbd>
+      </button>
+      <button class="hud__toggle" id="controls-toggle" type="button" aria-expanded="false" aria-controls="controls">
+        Ajustes
+        <svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" /></svg>
+      </button>
+    </div>
 
     <form class="controls" id="controls" hidden>
       <label class="control">
-        <span class="control__label">Velocidade da galáxia <output data-output="speed"></output></span>
+        <span class="control__label">Rotação das galáxias <output data-output="speed"></output></span>
         <input type="range" data-setting="speed" min="0" max="4" step="0.05" />
       </label>
 
@@ -65,12 +89,12 @@
       </label>
 
       <label class="control">
-        <span class="control__label">Intensidade do núcleo <output data-output="core"></output></span>
+        <span class="control__label">Intensidade dos núcleos <output data-output="core"></output></span>
         <input type="range" data-setting="core" min="0" max="2.5" step="0.05" />
       </label>
 
       <label class="control">
-        <span class="control__label">Braços espirais <output data-output="arms"></output></span>
+        <span class="control__label">Braços e formação estelar <output data-output="arms"></output></span>
         <input type="range" data-setting="arms" min="0" max="2" step="0.05" />
       </label>
 
@@ -90,17 +114,17 @@
       </label>
 
       <label class="control">
-        <span class="control__label">Inclinação <output data-output="tilt"></output></span>
-        <input type="range" data-setting="tilt" min="-40" max="60" step="1" />
-      </label>
-
-      <label class="control">
         <span class="control__label">Exposição <output data-output="exposure"></output></span>
         <input type="range" data-setting="exposure" min="0.3" max="2.5" step="0.05" />
       </label>
 
+      <label class="control">
+        <span class="control__label">Rastros de velocidade <output data-output="streaks"></output></span>
+        <input type="range" data-setting="streaks" min="0" max="2" step="0.05" />
+      </label>
+
       <label class="control control--switch">
-        <span class="control__label">Rotação automática</span>
+        <span class="control__label">Rotação automática da câmera</span>
         <input type="checkbox" data-setting="autoRotate" role="switch" />
       </label>
 
@@ -108,9 +132,63 @@
         <button class="controls__button" id="pause-toggle" type="button" aria-pressed="false">Pausar</button>
         <button class="controls__button" id="reset-camera" type="button">Resetar câmera</button>
       </div>
-      <p class="controls__keys">Atalhos: <kbd>Espaço</kbd> pausa · <kbd>R</kbd> reseta · <kbd>Esc</kbd> fecha</p>
+      <p class="controls__keys">
+        <kbd>TAB</kbd> observar/explorar · <kbd>G</kbd> galáxias · <kbd>T</kbd> viajar · <kbd>O</kbd> observar ·
+        <kbd>L</kbd> rótulos · <kbd>M</kbd> radar · <kbd>H</kbd> ocultar interface · <kbd>C</kbd> cinematográfico ·
+        <kbd>F</kbd> tela cheia · <kbd>P</kbd> captura · <kbd>Espaço</kbd> pausa · <kbd>R</kbd> reseta · <kbd>Esc</kbd> cancela/fecha
+      </p>
+      <p class="controls__keys">
+        Exploração: clique para mirar com o mouse · <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> mover ·
+        <kbd>Q</kbd>/<kbd>E</kbd> descer/subir · <kbd>Shift</kbd> acelera · <kbd>X</kbd> devagar · roda: velocidade
+      </p>
     </form>
   </aside>
+
+  <nav class="mode-switch" aria-label="Modo de navegação">
+    <button type="button" data-mode="observe" aria-pressed="true">Observação</button>
+    <button type="button" data-mode="explore" aria-pressed="false">Exploração</button>
+  </nav>
+
+  <section class="galaxy-panel" id="galaxy-panel" hidden aria-labelledby="galaxy-panel-title">
+    <header class="galaxy-panel__header">
+      <h2 class="galaxy-panel__title" id="galaxy-panel-title">Galáxias</h2>
+      <button class="panel-close" id="galaxy-panel-close" type="button" aria-label="Fechar">×</button>
+    </header>
+    <ul class="galaxy-list" id="galaxy-list"></ul>
+    <p class="galaxy-panel__note">
+      Direções reais no céu; distâncias entre galáxias comprimidas em escala logarítmica.
+    </p>
+  </section>
+
+  <section class="info-card" id="info-card" hidden aria-labelledby="info-name">
+    <button class="panel-close" id="info-close" type="button" aria-label="Fechar">×</button>
+    <h2 class="info-card__name" id="info-name"></h2>
+    <p class="info-card__alt" id="info-alt"></p>
+    <dl class="info-card__facts">
+      <div><dt>Tipo</dt><dd id="info-type"></dd></div>
+      <div><dt>Constelação</dt><dd id="info-constellation"></dd></div>
+      <div><dt>Distância real</dt><dd><span id="info-distance"></span><small id="info-distance-note"></small></dd></div>
+      <div id="info-size-row"><dt>Tamanho</dt><dd id="info-size"></dd></div>
+      <div class="info-card__scene"><dt>Na cena</dt><dd><span id="info-scene"></span><small>escala comprimida (visualização)</small></dd></div>
+    </dl>
+    <details class="info-card__more" id="info-more">
+      <summary>Sobre esta galáxia</summary>
+      <p class="info-card__description" id="info-description"></p>
+      <p class="info-card__sources">Fontes: <span id="info-sources"></span></p>
+    </details>
+    <div class="info-card__actions">
+      <button class="controls__button" id="info-travel" type="button">Viajar até <kbd>T</kbd></button>
+      <button class="controls__button" id="info-observe" type="button">Observar <kbd>O</kbd></button>
+    </div>
+  </section>
+
+  <div class="travel-status" id="travel-status" hidden role="status">
+    Viajando para <strong id="travel-target"></strong> · <span id="travel-phase"></span> · <kbd>Esc</kbd> cancela
+  </div>
+
+  <canvas class="radar" id="radar" width="160" height="160" hidden aria-label="Radar das galáxias"></canvas>
+
+  <pre class="debug" id="debug" hidden></pre>
 
   <section class="gpu-help" id="gpu-help" data-kind="integrated" hidden aria-labelledby="gpu-help-title">
     <button class="gpu-help__close" id="gpu-help-close" type="button" aria-label="Fechar">×</button>
@@ -118,7 +196,7 @@
     <p class="only-integrated">
       O navegador está usando <strong class="js-gpu-name">a GPU integrada</strong>. Em notebooks com duas placas
       de vídeo (por exemplo Intel/AMD + NVIDIA), o Windows costuma entregar a mais fraca ao navegador.
-      A galáxia continua funcionando, mas com menos estrelas.
+      O explorador continua funcionando, mas com menos estrelas.
     </p>
     <p class="only-software">
       O navegador está desenhando a cena na <strong>CPU</strong>, sem usar a placa de vídeo. A galáxia foi
@@ -147,9 +225,9 @@
     </p>
   </section>
 
-  <p class="loading" id="loading" role="status">Gerando a galáxia…</p>
+  <p class="loading" id="loading" role="status">Gerando as galáxias…</p>
 
-  <p class="hint" id="hint">Arraste para orbitar · Role ou use pinça para zoom</p>
+  <p class="hint is-hidden" id="hint"></p>
 
   <p class="fallback" id="fallback" hidden>
     Seu navegador não conseguiu iniciar o WebGL 2.<br />
@@ -176,6 +254,7 @@
       document.getElementById('hud').hidden = true;
       document.getElementById('hint').hidden = true;
       document.getElementById('loading').hidden = true;
+      document.querySelector('.mode-switch').hidden = true;
     } else {
       const main = document.createElement('script');
       main.type = 'module';

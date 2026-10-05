@@ -38,10 +38,12 @@ export const volumeFragment = /* glsl */ `
   #define MAX_STEPS 32
   #endif
 
+
   uniform int uSteps;         // upper bound of samples per ray
   uniform int uMinSteps;
   uniform float uStepLength;  // target distance between samples (kpc)
   uniform float uDiskRadius;
+  uniform float uBoundRadius;   // cylinder containing the (possibly deformed) disc
   uniform float uDiskScale;
   uniform float uOldSigma;
   uniform float uYoungSigma;
@@ -53,6 +55,13 @@ export const volumeFragment = /* glsl */ `
   uniform float uTexelSize;     // kpc per texel of the galaxy map
   uniform vec4 uBulgeShape[BULGE_COMPONENTS]; // xyz: 1/σ per axis, w: peak emissivity
   uniform vec3 uBulgeColor[BULGE_COMPONENTS];
+  // x: angle around the axis, y: 1 when it turns with the spiral pattern (bars)
+  uniform vec2 uBulgeOrient[BULGE_COMPONENTS];
+  uniform vec3 uOldInner;       // old disc colour near the bulge...
+  uniform vec3 uOldOuter;       // ... and further out
+  uniform vec2 uOldRange;       // radii of that colour transition
+  uniform vec3 uYoungColor;
+  uniform vec3 uHiiColor;
 
   varying vec3 vLocal;
 
@@ -80,20 +89,31 @@ export const volumeFragment = /* glsl */ `
     return sum;
   }
 
-  // Colour of the old disc: warm near the bulge, whiter outside.
+  // Colour of the old disc: warm near the bulge, whiter outside (M31).
   vec3 oldDiscColor(float radius) {
-    return mix(vec3(1.0, 0.84, 0.62), vec3(0.95, 0.92, 0.88), smoothstep(4.0, 16.0, radius));
+    return mix(uOldInner, uOldOuter, smoothstep(uOldRange.x, uOldRange.y, radius));
   }
 
   void main() {
     vec3 ro = uCamLocal;
     vec3 rd = normalize(vLocal - uCamLocal);
 
+    // Each component in its own frame: bars and triaxial spheroids are turned
+    // around the axis (bars turn with the spiral pattern).
     Blob blobs[BULGE_COMPONENTS];
-    for (int i = 0; i < BULGE_COMPONENTS; i++) blobs[i] = makeBlob(ro, rd, uBulgeShape[i].xyz);
+    for (int i = 0; i < BULGE_COMPONENTS; i++) {
+      float angle = uBulgeOrient[i].x + uBulgeOrient[i].y * uPatternAngle;
+      vec3 o = ro;
+      vec3 d = rd;
+      if (angle != 0.0) {
+        o.xz = rotate2(ro.xz, -angle);
+        d.xz = rotate2(rd.xz, -angle);
+      }
+      blobs[i] = makeBlob(o, d, uBulgeShape[i].xyz);
+    }
 
     // --- Where does the ray cross the disc slab? -------------------------------------
-    float halfHeight = 3.2 * uOldSigma;
+    float halfHeight = 3.2 * uOldSigma + abs(uDiskWarp.x);
     float tIn = 0.0;
     float tOut = -1.0;
     if (abs(rd.y) > 1e-5) {
@@ -107,7 +127,7 @@ export const volumeFragment = /* glsl */ `
     // ... and the cylinder that contains the disc.
     float a = dot(rd.xz, rd.xz);
     float b = dot(ro.xz, rd.xz);
-    float c = dot(ro.xz, ro.xz) - uDiskRadius * uDiskRadius;
+    float c = dot(ro.xz, ro.xz) - uBoundRadius * uBoundRadius;
     float disc = b * b - a * c;
     if (disc > 0.0 && a > 1e-8) {
       float root = sqrt(disc);
@@ -116,6 +136,7 @@ export const volumeFragment = /* glsl */ `
     } else {
       tOut = -1.0;
     }
+    if (uDiskRadius <= 0.0) tOut = -1.0; // no disc (elliptical galaxies)
     tIn = max(tIn, 0.0);
 
     vec3 light = vec3(0.0);
@@ -170,21 +191,38 @@ export const volumeFragment = /* glsl */ `
         vec4 map = galaxyMap(ps.xz, lod);
         float radius = length(ps.xz);
 
-        vec3 erfB = erf3(yb * k);
-        vec3 g = norm * (erfB - erfA);
-        if (anyMidpoint) {
-          vec3 ym = (0.5 * (ya + yb)) / sigma;
-          g = mix(g, exp(-0.5 * ym * ym), vec3(midpoint));
-        }
+        #ifdef DISK_WARP
+          // Warped disc: heights from the local mid-plane (no erf reuse).
+          float plane = diskWarp(ps.xz);
+          vec3 erfB = erf3((yb - plane) * k);
+          vec3 g = norm * (erfB - erf3((ya - plane) * k));
+          if (anyMidpoint) {
+            vec3 ym = (0.5 * (ya + yb) - plane) / sigma;
+            g = mix(g, exp(-0.5 * ym * ym), vec3(midpoint));
+          }
+        #else
+          vec3 erfB = erf3(yb * k);
+          vec3 g = norm * (erfB - erfA);
+          if (anyMidpoint) {
+            vec3 ym = (0.5 * (ya + yb)) / sigma;
+            g = mix(g, exp(-0.5 * ym * ym), vec3(midpoint));
+          }
+        #endif
         erfA = erfB;
         ya = yb;
 
-        float edge = 1.0 - smoothstep(uDiskRadius - 5.0, uDiskRadius, radius);
-        float oldProfile = exp(-sqrt(radius * radius + 0.64) / uDiskScale) * edge;
+        #ifdef TIDAL_DEFORM
+          // Interacting galaxies: the deformed profile comes from the map.
+          float oldProfile = map.a * map.a * 1.22;
+        #else
+          float edge = 1.0 - smoothstep(uDiskRadius * 0.815, uDiskRadius, radius);
+          float soft = 0.154 * uDiskScale; // the profile is rounded off at the centre
+          float oldProfile = exp(-sqrt(radius * radius + soft * soft) / uDiskScale) * edge * (0.72 + 0.5 * map.a);
+        #endif
 
-        vec3 emission = oldDiscColor(radius) * (uDiskLight * oldProfile * (0.72 + 0.5 * map.a) * g.x)
-                      + vec3(0.4, 0.6, 1.0) * (uYoungLight * map.g * g.y)
-                      + vec3(1.0, 0.36, 0.48) * (uHiiLight * map.b * g.y);
+        vec3 emission = oldDiscColor(radius) * (uDiskLight * oldProfile * g.x)
+                      + uYoungColor * (uYoungLight * map.g * g.y)
+                      + uHiiColor * (uHiiLight * map.b * g.y);
         vec3 bulge = vec3(0.0);
         for (int j = 0; j < BULGE_COMPONENTS; j++) {
           if (!bulgeActive[j]) continue;

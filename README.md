@@ -1,82 +1,69 @@
-# Andromeda Galaxy
+# Galaxy Explorer
 
-**Visualização procedural interativa de M31 em tempo real** · Three.js · WebGL 2 · GLSL · sem build
+**Explorador 3D interativo de galáxias reais, gerado em tempo real** · Three.js · WebGL 2 · GLSL · sem build · funciona offline
 
-![A Galáxia de Andrômeda gerada em tempo real: núcleo branco e amarelo, disco creme com faixas de poeira, braços externos azulados, M32 e M110](docs/preview.jpg)
+![Galaxy Explorer: a Galáxia de Andrômeda na vista inicial, com o HUD "GALAXY EXPLORER" e a alternância Observação/Exploração](docs/preview.jpg)
 
 ## Descrição
 
-Uma experiência 3D interativa da Galáxia de Andrômeda (M31, NGC 224), executada inteiramente no navegador com WebGL 2 e shaders GLSL.
+O projeto começou como uma visualização procedural da **Galáxia de Andrômeda (M31)** e evoluiu para um **Interactive 3D Galaxy Explorer**: um pequeno universo navegável com **13 sistemas de galáxias reais**, cada um com a sua própria estrutura, para observar de perto, sobrevoar livremente ou visitar com um piloto automático cinematográfico.
 
-Nada aqui é uma foto. A galáxia é **construída pelo sistema** a partir de um modelo procedural com semente fixa: centenas de milhares de estrelas em órbita, um núcleo luminoso, o disco, os braços espirais, faixas de poeira que absorvem a luz de verdade, halo, aglomerados globulares, as galáxias satélites M32 e M110 e um campo estelar profundo. As fotografias de M31 serviram apenas de referência de aparência.
+Nada aqui é uma foto ou um plano com imagem. Cada galáxia é **construída pelo sistema** em 3D: centenas de milhares de estrelas, luz difusa integrada em volume, poeira que absorve a luz de verdade, halo, aglomerados, barras, anéis, conchas e caudas de maré, tudo procedural e com semente fixa. As fotografias serviram apenas de referência de aparência (veja [docs/GALAXY_REFERENCES.md](docs/GALAXY_REFERENCES.md)).
 
-Tudo roda a partir de arquivos estáticos: não há `npm install`, bundler nem etapa de build. O Three.js vem junto, em `vendor/`, então o projeto também funciona **offline**.
+M31 continua sendo a galáxia mais detalhada (núcleo, bulbo, disco em órbitas de ondas de densidade, braços, regiões HII, poeira, halo, aglomerados globulares, M32 e M110, rotação diferencial e luz volumétrica) e, no perfil ULTRA, é desenhada com as mesmas 356 mil estrelas da versão original.
 
-![Quatro ângulos da mesma galáxia: perto do núcleo, quase de perfil, vista de cima e de dentro do disco](docs/angles.jpg)
+Tudo roda a partir de arquivos estáticos: não há `npm install`, bundler nem etapa de build. O Three.js vem junto, em `vendor/`.
+
+![As 13 galáxias do explorador vistas como nas suas fotografias, e três vistas em voo livre](docs/gallery.jpg)
+
+## Galáxias
+
+| Galáxia | Tipo | Constelação | Distância real | Estrutura procedural |
+| --- | --- | --- | --- | --- |
+| **Andrômeda** (M31, NGC 224) | Espiral | Andrômeda | ≈ 2,5 milhões de anos-luz | Bulbo triaxial, disco em ondas de densidade, anel de 10 kpc, braços fragmentados, HII, poeira, halo, globulares, M32 e M110 |
+| **Sombreiro** (M104) | Espiral vista quase de perfil | Virgem | ≈ 28 milhões | Bojo gigante em 5 camadas, disco fino com anel de poeira escura, halo rico em globulares |
+| **Olho Negro** (M64) | Espiral | Cabeleira de Berenice | ≈ 17 milhões | Anel de poeira denso e assimétrico junto ao núcleo, disco externo liso |
+| **Cata-vento do Sul** (M83) | Espiral barrada | Hidra | ≈ 15 milhões | Barra que gira com o padrão, braços a partir das pontas, muitas regiões HII |
+| **NGC 1300** | Espiral barrada | Erídano | ≈ 60 milhões | Barra longa com faixas de poeira na borda de ataque, dois braços abertos |
+| **NGC 1566** | Espiral | Dourado | ≈ 60 milhões | Dois braços dominantes com aglomerados azuis e poeira, núcleo compacto |
+| **NGC 4414** | Espiral (floculenta) | Cabeleira de Berenice | ≈ 60 milhões | Fragmentos curtos de braços e de poeira em vez de braços contínuos |
+| **Objeto de Hoag** | Galáxia anelar | Serpente (Cabeça) | ≈ 550 milhões | Núcleo esferoidal, intervalo escuro, anel 3D irregular de aglomerados azuis |
+| **Centaurus A** (NGC 5128) | Elíptica peculiar | Centauro | ≈ 13 milhões | Esferoide gigante cruzado por um disco de poeira empenado, com estrelas jovens |
+| **NGC 474 + NGC 470** (Arp 227) | Galáxia com conchas + espiral | Peixes | ≈ 110 milhões (estimativa) | Conchas e laços estelares em torno do esferoide, espiral companheira |
+| **Antenas** (NGC 4038/4039) | Par em fusão | Corvo | ≈ 45 milhões | Dois discos deformados por maré, região de contato cheia de HII, duas caudas de maré 3D |
+| **Arp 142** (NGC 2936/2937) | Par em interação | Hidra | ≈ 400 milhões | Espiral esticada em forma de "pinguim", elíptica compacta (o "ovo"), corrente de maré |
+| **Arp 87** (NGC 3808/3808A) | Par em interação | Leão | ≈ 330 milhões (estimativa) | Espiral com anel de formação estelar, companheira de perfil, ponte de matéria |
+
+Os dados (tipo, constelação, distância, coordenadas) vêm de NASA, ESA/Hubble, ESA/Webb, ESO e NED, citados no cartão de cada galáxia e em [docs/GALAXY_REFERENCES.md](docs/GALAXY_REFERENCES.md). Quando a fonte não traz uma distância medida, o explorador mostra a estimativa pelo desvio para o vermelho e **diz que é uma estimativa**. Nenhum número foi inventado.
+
+## Escalas: o que é real e o que é comprimido
+
+> **As distâncias entre as galáxias estão comprimidas.** Em escala real, o Objeto de Hoag estaria 220 vezes mais longe que Andrômeda, e nenhuma outra galáxia caberia na mesma tela que ela. O explorador usa uma escala logarítmica: Andrômeda fica a 120 unidades do ponto de partida e cada fator 10 na distância real acrescenta 160 unidades.
+
+- **Direções reais.** Cada galáxia está na sua direção verdadeira no céu (ascensão reta e declinação do NED), vista a partir do ponto de partida, a nossa Galáxia; o norte celeste aponta para cima. Por isso M104, M64, NGC 4414, Antenas, M83 e Centaurus A ficam do mesmo lado do céu, e Andrômeda do lado oposto. A faixa de estrelas da Via Láctea no fundo também está no plano galáctico real.
+- **Dentro de uma galáxia**, 1 unidade ≈ 1 kpc ≈ 3 260 anos-luz, e os tamanhos são aproximadamente realistas; algumas galáxias pequenas foram um pouco ampliadas para continuarem legíveis.
+- **No HUD e no cartão**, "Distância real" é a distância medida até a Terra; "Na cena" é a distância da câmera em unidades da cena (comprimida). As duas nunca se misturam.
+- **Orientações** imitam a aparência nas fotografias: vistas do ponto de partida, as galáxias aparecem como nas imagens. São escolhas visuais, não medidas.
+
+## Ciência × visualização
+
+Isto é uma **visualização artística baseada em dados reais**, não uma simulação científica:
+
+- A rotação é lenta e visual (ondas de densidade e curva de rotação aproximadas); não há simulação gravitacional N-corpos.
+- Os sistemas em interação (Antenas, Arp 142, Arp 87, NGC 474) e Centaurus A ficam **congelados em um estado visual representativo**: essas colisões levam centenas de milhões de anos.
+- Cores, brilhos, números de estrelas e detalhes procedurais foram ajustados para lembrar as fotografias.
 
 ## Tecnologias
 
 | Tecnologia | Uso |
 | --- | --- |
 | [Three.js r170](https://threejs.org/) | Renderer WebGL, câmera, geometrias, materiais (incluído em `vendor/`) |
-| WebGL 2 + GLSL | Órbitas, poeira, luz volumétrica e cores calculadas na GPU |
+| WebGL 2 + GLSL | Órbitas, poeira, mapas procedurais, luz volumétrica e cores calculados na GPU |
 | JavaScript (ES Modules) | Lógica da cena, sem frameworks |
-| HTML5 + CSS3 | HUD, painel de controles e avisos |
-| `OrbitControls` | Câmera interativa (addon oficial do Three.js) |
-| `EffectComposer`, `RenderPass`, `UnrealBloomPass`, `OutputPass` | HDR, bloom e tone mapping (addons oficiais) |
+| HTML5 + CSS3 | HUD, painéis, rótulos e radar |
+| `OrbitControls` | Modo Observação (addon oficial do Three.js) |
+| `EffectComposer`, `UnrealBloomPass`, `OutputPass` | HDR, bloom e tone mapping (addons oficiais) |
 | PowerShell | Servidor local e launcher do Windows (`iniciar.bat`) |
-
-## Características
-
-A galáxia é feita de várias camadas que trabalham juntas. Unidade da cena: **1 kpc** (≈ 3 260 anos-luz).
-
-### Núcleo galáctico
-- Núcleo compacto extremamente denso e um **bulbo grande, achatado e levemente triaxial** (perfil de Hernquist), com dezenas de milhares de estrelas quentes.
-- A luz do bulbo é uma soma de **elipsoides gaussianos integrados exatamente** ao longo de cada raio (função erro): branco no centro, creme, amarelo e dourado nas bordas, com profundidade real em qualquer ângulo. O pico HDR alimenta o bloom.
-
-### Disco estelar
-- Disco antigo exponencial (escala ~5 kpc) com espessura vertical e leve alargamento para fora: as estrelas não estão num plano.
-- Cada estrela percorre uma **órbita levemente elíptica** cuja orientação gira com o raio. Onde as elipses se aglomeram surgem os braços (**ondas de densidade**). Assim as estrelas mantêm a **rotação diferencial** (mais rápidas perto do centro, curva de rotação que sobe e fica plana) e atravessam os braços sem nunca "enrolá-los", mesmo com a página aberta por horas. Um teste acelerou 26 voltas do padrão e a estrutura continuou igual.
-- Pequena oscilação vertical de cada estrela através do disco.
-
-### Braços espirais
-- Dois braços logarítmicos bem enrolados (inclinação ~11°), esporas mais abertas e o **anel de formação estelar de ~10 kpc**, característico de M31, levemente descentralizado.
-- Tudo deformado por ruído (*domain warping*): os braços se curvam, se partem em segmentos, formam nuvens estelares, regiões mais abertas e mais compactas. Nenhuma curva é matematicamente perfeita.
-- Estrelas jovens posicionadas por amostragem no próprio mapa procedural, **associações OB** (aglomerados azuis), **supergigantes** com halo discreto e brilhos rosados de **regiões HII**.
-
-### Populações estelares e cores
-- Rampa de temperatura aproximando um corpo negro: branco, branco-azulado, azul claro, amarelo, amarelo quente e poucas alaranjadas/vermelhas.
-- O centro é branco/amarelado, o disco interno creme e os braços externos branco-azulados. O azul fica nos braços, não na galáxia inteira.
-
-### Faixas de poeira
-- Faixas na borda interna dos braços, o anel de poeira perto de 10 kpc, arcos apertados ao redor do bulbo, filamentos e manchas, mais uma poeira difusa fina em todo o disco.
-- A poeira **absorve**, não é pintada: cada estrela calcula no vertex shader a coluna de poeira entre ela e a câmera (forma fechada com erf) e é atenuada por `exp(-τ)`. A luz difusa é integrada da frente para trás, então a luz do bulbo atrás do lado próximo do disco é cortada pelas faixas.
-- A luz azul é absorvida ~2× mais que a vermelha: as faixas ficam marrons e as transições são suaves.
-
-### Luz difusa volumétrica
-- O brilho contínuo de uma galáxia fotografada (bilhões de estrelas não resolvidas), construído em 3D: para cada pixel, o raio da câmera atravessa o bulbo, a camada antiga, a camada jovem azul, as regiões HII e a poeira. Muda de forma quando a câmera se move e funciona com a câmera dentro da galáxia.
-
-### Halo
-- Nuvem esparsa e achatada de estrelas antigas acima e abaixo do disco, e **aglomerados globulares** do tamanho real (3–9 pc): de longe parecem estrelas difusas, de perto se resolvem em estrelas.
-
-### Galáxias satélites
-- **M32** (elíptica compacta, logo além da borda próxima do disco) e **M110** (elíptica alongada e difusa, acima do lado distante), com estrelas e brilho difuso analítico. Discretas, sem roubar o foco.
-
-### Campo estelar do universo
-- Dezenas de milhares de estrelas da nossa galáxia em camadas entre 900 e 5 000 kpc (paralaxe ao orbitar), mais densas ao longo da faixa da Via Láctea, com tamanhos, intensidades e cores diferentes, muitas extremamente fracas e cintilação muito sutil.
-- Algumas centenas de estrelas brilhantes com halo e raios de difração discretos, e galáxias de fundo muito fracas.
-
-### Rotação, câmera e pós-processamento
-- Rotação extremamente lenta e diferencial (o padrão espiral dá uma volta a cada 10 min em 1×; perto do bulbo as estrelas giram ~4× mais rápido).
-- `OrbitControls` com inércia, limites de zoom (a câmera nunca entra no núcleo), rotação automática lenta que pausa enquanto você interage e **reset** com voo suave.
-- **Lente dinâmica**: teleobjetiva na vista inicial (como as fotos, quase sem perspectiva), abrindo progressivamente ao se aproximar, para imersão e profundidade.
-- **Adaptação de exposição** pela distância, como o olho: perto do núcleo ele não vira uma mancha branca.
-- HDR em half float, `UnrealBloomPass` com pesos que favorecem um brilho justo (núcleo e estrelas fortes, sem névoa na tela toda), tone mapping ACES, sRGB, vinheta leve e dithering (sem faixas nos degradês).
-
-### Robustez
-- Randomização determinística (`?seed=`): a galáxia é a mesma a cada carregamento.
-- Cada população é uma única `BufferGeometry` + `THREE.Points` (uma draw call), com atributos customizados. Nenhum objeto JavaScript por estrela e nenhuma alocação no loop de animação.
-- Aberto via `file://`, mostra instruções em vez de tela preta, sem erros de CORS. Se o navegador perder o contexto WebGL, avisa e recarrega.
 
 ## Como executar
 
@@ -87,7 +74,7 @@ A galáxia é feita de várias camadas que trabalham juntas. Unidade da cena: **
 1. Baixe o projeto (*Code → Download ZIP*) e extraia a pasta.
 2. Dê dois cliques em **`iniciar.bat`**.
 3. Na primeira vez, a janela preta explica e pergunta se pode configurar o Windows para usar a **placa de vídeo de alto desempenho** no navegador (veja [GPU dedicada](#gpu-dedicada)). Aperte **Enter** (sim) ou digite `n`.
-4. O projeto abre numa janela própria do Chrome (ou Edge), já pedindo a placa dedicada. Deixe a janela preta aberta enquanto usa o projeto; feche-a para parar.
+4. O explorador abre numa janela própria do Chrome (ou Edge), já pedindo a placa dedicada. Deixe a janela preta aberta enquanto usa o projeto; feche-a para parar.
 
 O `iniciar.bat` roda `tools/servidor.ps1`, um mini servidor em PowerShell (já vem no Windows). Nada é instalado. Se o Windows perguntar se pode executar o arquivo baixado, clique em *Mais informações → Executar assim mesmo*.
 
@@ -119,14 +106,110 @@ Depois abra **http://localhost:8000**. No VS Code, a extensão *Live Server* tam
 
 | URL | Efeito |
 | --- | --- |
-| `?quality=ultra` | Força o perfil ULTRA |
-| `?quality=high` | Força o perfil HIGH |
-| `?quality=medium` | Força o perfil MEDIUM |
-| `?quality=low` | Força o perfil LOW |
+| `?galaxy=m104` | Começa observando outra galáxia (`m31`, `m104`, `m64`, `m83`, `ngc1300`, `ngc1566`, `ngc4414`, `hoag`, `cena`, `ngc474`, `antennae`, `arp142`, `arp87`) |
+| `?quality=ultra` · `high` · `medium` · `low` | Força um perfil de qualidade |
 | `?adaptive=off` | Desliga todo ajuste automático (benchmarks e capturas) |
-| `?seed=42` | Gera uma galáxia irmã com outra semente |
+| `?seed=42` | Muda todas as sementes procedurais: as mesmas galáxias, com outros detalhes |
+| `?debug=1` | Mostra posição da câmera, modo, galáxia ativa, LOD de cada galáxia, draw calls, memória da GPU, estrelas, FPS e velocidade |
 
-Com o perfil forçado, a qualidade só é reduzida se houver **risco real de travamento** (menos de 12 FPS por ~6 s seguidos); o HUD então mostra `reduzido`.
+Os parâmetros se combinam: `?galaxy=antennae&quality=high&debug=1`. Com o perfil forçado, a qualidade só é reduzida se houver **risco real de travamento** (menos de 12 FPS por ~6 s seguidos); o HUD então mostra `reduzido`.
+
+## Navegação e controles
+
+O explorador tem dois modos, alternados com **`TAB`** (ou pelos botões no topo da tela). A troca é suave: a câmera não salta.
+
+### Observação (modo inicial)
+
+Órbita em torno da galáxia escolhida, como no projeto original.
+
+| Ação | Mouse / teclado | Toque |
+| --- | --- | --- |
+| Orbitar | botão esquerdo + arrastar | arrastar com um dedo |
+| Zoom | roda do mouse | pinça |
+| Voltar ao enquadramento inicial | `R` | botão **Resetar câmera** |
+
+A lente é teleobjetiva no enquadramento inicial (como nas fotografias) e se abre ao aproximar. A câmera nunca entra no núcleo.
+
+### Exploração (voo livre)
+
+| Ação | Teclado / mouse | Toque |
+| --- | --- | --- |
+| Olhar em volta | clique na cena para capturar o mouse (`Esc` solta); sem captura, arraste | arrastar com um dedo |
+| Frente / trás | `W` / `S` (ou setas) | afastar / juntar dois dedos |
+| Esquerda / direita | `A` / `D` (ou setas) | — |
+| Subir / descer | `E` / `Q` | — |
+| Acelerar | `Shift` (quanto mais tempo segurado, mais rápido) | — |
+| Devagar | `X` | — |
+| Velocidade base | roda do mouse | — |
+
+O movimento tem aceleração e inércia. A velocidade acompanha a escala: lenta e precisa dentro de uma galáxia, rápida no vazio entre elas. Não há paredes invisíveis; só um empurrão suave para fora do centro de uma galáxia. Em alta velocidade aparecem rastros discretos de poeira e a exposição se abre levemente.
+
+### Viajar até uma galáxia
+
+Escolha uma galáxia (clique nela, mire com a cruz no modo Exploração, ou use o painel **Galáxias**) e aperte **`T`** ou **Viajar até**. O piloto automático alinha a câmera, acelera, cruza o espaço, desacelera e chega ao enquadramento da fotografia da galáxia, entrando no modo Observação. A rota contorna os núcleos de outras galáxias, e as estrelas do destino são geradas durante a viagem. **Qualquer comando de movimento, clique, roda do mouse ou `Esc` cancela a viagem**, e a câmera para suavemente onde estiver.
+
+### Atalhos
+
+| Tecla | Ação |
+| --- | --- |
+| `TAB` | Observação ⇄ Exploração |
+| `G` | Painel **Galáxias** (lista, seleção, informações) |
+| `T` | Viajar até a galáxia selecionada (ou a que está na mira) |
+| `O` | Observar a galáxia selecionada (ou a mais próxima) |
+| `L` | Rótulos de todas as galáxias (por padrão só a selecionada e a da mira) |
+| `M` | Radar |
+| `H` | Ocultar / mostrar a interface |
+| `C` | Modo cinematográfico (sem interface, faixas pretas, órbita automática) |
+| `F` | Tela cheia |
+| `P` | Salvar captura de tela (PNG) |
+| `Espaço` | Pausar / continuar a rotação das galáxias (a câmera continua livre) |
+| `R` | Voltar ao enquadramento inicial da galáxia observada |
+| `Esc` | Cancelar viagem · sair do modo cinematográfico · fechar painéis · tirar a seleção |
+
+Os atalhos são ignorados enquanto se digita num controle e com `Ctrl`, `Alt` ou `Cmd` pressionados (assim `Ctrl+W` continua fechando a aba).
+
+## Interface
+
+- **HUD "GALAXY EXPLORER"**: modo atual, galáxia em foco, distância real, distância na cena, velocidade, FPS, GPU, perfil e estrelas desenhadas.
+- **Painel Galáxias** (`G`): as 13 galáxias com tipo e distância. Escolher uma a **seleciona** (destaque, rótulo e cartão); ela nunca é teletransportada.
+- **Cartão de informação**: nome, designações, tipo, constelação, distância real (com a observação quando é estimativa), tamanho quando a fonte informa, distância na cena (marcada como escala comprimida), descrição e fontes com link. Botões **Viajar até** e **Observar**.
+- **Rótulos** discretos sob as galáxias, **radar** com a direção de cada galáxia (para cima = à frente da câmera), estado da viagem e dicas de teclas que somem sozinhas.
+- **Ajustes**: velocidade de rotação das galáxias, densidade estelar, núcleos, braços e formação estelar, poeira, bloom, estrelas de fundo, exposição, rastros de velocidade, rotação automática, pausar e resetar.
+- Responsivo: no celular os painéis ocupam a largura da tela e a alternância de modos vai para baixo. A prioridade é o desktop.
+
+## Níveis de detalhe e desempenho
+
+- **Luz difusa sempre presente.** Toda galáxia existe desde o início como luz volumétrica (bulbo, disco, braços, poeira), barata quando ocupa poucos pixels. Um **farol** discreto mantém as galáxias muito distantes visíveis.
+- **LOD 0–4 pelo tamanho aparente na tela** (distância ÷ raio, corrigida pela lente e pela altura da janela; galáxias fora do campo de visão contam como mais distantes):
+
+  | LOD | Mostra |
+  | --- | --- |
+  | 0 | Todas as estrelas, mapa nítido, mais amostras de volume |
+  | 1 | ~75% das estrelas |
+  | 2 | ~40% das estrelas, aparecendo/sumindo em fade |
+  | 3 | Só luz difusa (menos amostras) |
+  | 4 | Luz difusa mínima + farol |
+
+  As trocas têm **histerese** (sem piscar na fronteira) e **fade cruzado**; as mudanças com estrelas aparecem no console (`[GalaxyExplorer] LOD Andrômeda -> 1`).
+- **Geração assíncrona.** As estrelas de uma galáxia são geradas quando ela começa a ficar grande na tela (ou assim que uma viagem até ela começa), **uma galáxia por vez e em fatias de alguns milissegundos por quadro**: a animação nunca trava e não há tela de carregamento nas viagens. Medido aqui: 0,17–0,46 s de CPU por galáxia no perfil ULTRA, espalhados por ~1 s de quadros. Saindo de perto, as estrelas somem em fade e a memória é liberada.
+- **Orçamento global**: no máximo 2–3 galáxias com estrelas na memória e um teto de estrelas desenhadas ao mesmo tempo por perfil; todas as frações descem juntas se o teto for atingido.
+- **Poucas draw calls**: cada população de estrelas é uma única `BufferGeometry` + `THREE.Points`, sem objetos JavaScript por estrela e sem alocação no loop de animação. Os shaders de todas as variantes são compilados na abertura, para que uma galáxia nova nunca cause engasgo.
+- **Precisão**: o universo inteiro cabe em ~1 000 unidades e as matrizes são calculadas em precisão dupla no JavaScript; nada usa o depth buffer (toda a luz é aditiva). Por isso não foi necessário *floating origin* nem depth buffer logarítmico, e não há z-fighting.
+
+## Qualidade
+
+O perfil é escolhido pela GPU que o navegador está realmente usando:
+
+| Perfil | Quando | Estrelas por galáxia (peso 1 = M31) | Teto desenhado | Galáxias com estrelas | Luz difusa | Mapa | Pixel ratio |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **ULTRA** | GPU dedicada potente (RTX, RX 5000+, Arc A5/A7) | **356 000** | 560 000 | 3 | 100% da resolução, até 32 amostras/raio | 2048² | até 2 |
+| **HIGH** | outras dedicadas, Apple M, GPU desconhecida | **233 000** | 360 000 | 3 | 85%, até 24 | 2048² | até 1.75 |
+| **MEDIUM** | GPU integrada, NVIDIA MX, tablets | **128 000** | 190 000 | 2 | 60%, até 14 | 1024² | até 1.25 |
+| **LOW** | celulares, CPU (software) | **64 000** | 90 000 | 2 | 50%, até 8 | 1024² | 1 (1.5 no celular) |
+
+Cada galáxia tem um peso no catálogo (M31 = 1; as outras entre 0,5 e 0,75). O céu de fundo tem 45 000 / 32 000 / 18 000 / 9 000 estrelas.
+
+**Governador de FPS.** Se a média ficar abaixo de 45 FPS por duas janelas seguidas de 2 s, a qualidade desce um degrau e o sistema espera 3 s antes de avaliar de novo (nunca oscila): primeiro a resolução, depois a resolução e as amostras da luz difusa, depois o orçamento de estrelas, o céu e os efeitos finais. Cada ajuste aparece no console e o HUD passa a mostrar `ajustado`.
 
 ## GPU dedicada
 
@@ -157,105 +240,103 @@ Com GPU integrada ou CPU, um cartão explica o que fazer (abre sozinho na primei
 
 Para conferir: ponto verde no HUD, ou `chrome://gpu` → *GL_RENDERER*.
 
-## Controles
-
-| Ação | Mouse / teclado | Toque |
-| --- | --- | --- |
-| Orbitar | botão esquerdo + arrastar | arrastar com um dedo |
-| Zoom | roda do mouse | pinça |
-| Pausar / continuar | `Espaço` | botão **Pausar** |
-| Resetar câmera | `R` | botão **Resetar câmera** |
-| Abrir / fechar o painel | botão **Controles** (`Esc` fecha) | botão **Controles** |
-
-Painel (recolhível; no celular ocupa pouco espaço e rola):
-
-| Controle | Faixa | Descrição |
-| --- | --- | --- |
-| Velocidade da galáxia | 0 – 4× | Ritmo da rotação (0 congela as órbitas) |
-| Densidade estelar | 10 – 100% | Fração das estrelas desenhadas (as restantes ficam mais brilhantes para manter a luz) |
-| Intensidade do núcleo | 0 – 2.5 | Brilho do bulbo e do núcleo |
-| Braços espirais | 0 – 2 | Luz azul dos braços, estrelas jovens, supergigantes e HII |
-| Poeira | 0 – 2 | Opacidade das faixas de poeira (0 desliga) |
-| Bloom | 0 – 2 | Intensidade do brilho HDR (0 desliga) |
-| Estrelas de fundo | 0 – 2 | Brilho do céu (0 esconde) |
-| Inclinação | −40° – +60° | Inclina a galáxia em relação à vista inicial |
-| Exposição | 0.3 – 2.5 | Exposição do tone mapping |
-| Rotação automática | on/off | Órbita lenta da câmera (~4,5 min por volta) |
-| Pausar | — | Congela a galáxia (a câmera continua livre) |
-| Resetar câmera | — | Volta suavemente à vista inicial |
-
-Quem prefere movimento reduzido (`prefers-reduced-motion`) recebe a galáxia mais lenta e a rotação automática desligada.
-
-## Qualidade
-
-O perfil é escolhido pela GPU que o navegador está realmente usando:
-
-| Perfil | Quando | Estrelas da galáxia | Céu | Luz difusa | Mapa | Pixel ratio |
-| --- | --- | --- | --- | --- | --- | --- |
-| **ULTRA** | GPU dedicada potente (RTX, RX 5000+, Arc A5/A7) | **355 400** | 45 000 + 420 brilhantes + 260 galáxias | 100% da resolução, até 32 amostras/raio | 2048² | até 2 |
-| **HIGH** | outras dedicadas, Apple M, GPU desconhecida | **233 000** | 32 000 + 320 + 160 | 85%, até 24 | 2048² | até 1.75 |
-| **MEDIUM** | GPU integrada, NVIDIA MX, tablets | **127 600** | 18 000 + 220 + 80 | 60%, até 14 | 1024² | até 1.25 |
-| **LOW** | celulares, CPU (software) | **63 800** | 9 000 + 140 | 50%, até 8 | 1024² | 1 (1.5 no celular) |
-
-As estrelas da galáxia somam núcleo/bulbo, disco, braços (com associações OB), supergigantes, halo (com aglomerados globulares) e satélites. A resolução da luz difusa é relativa aos pixels CSS: em telas 4K/retina ela não custa 4× mais.
-
-**Governador de FPS.** Se a média ficar abaixo de 45 FPS por duas janelas seguidas de 2 s, a qualidade desce um degrau e o sistema espera 3 s antes de avaliar de novo (nunca oscila): primeiro a resolução, depois a resolução e as amostras da luz difusa, depois a densidade de estrelas, o céu e os efeitos finais. Cada ajuste aparece no console (`console.info`) e o HUD passa a mostrar `ajustado`.
-
-**Como os números foram escolhidos.** Este ambiente de desenvolvimento não tem GPU física: os testes rodaram no Chromium com SwiftShader (renderização por CPU). Medindo cada camada separadamente, a luz difusa volumétrica é o que mais custa; 355 mil estrelas em 7 draw calls custam pouco. Os perfis foram dimensionados a partir desse custo relativo e do trabalho por quadro (vértices, fragmentos misturados, amostras de volume), mirando 60 FPS numa GPU dedicada de notebook (classe RTX 3050) em 1080p. Se a sua máquina não acompanhar, o governador corrige sozinho; com `?quality=` você fixa o perfil.
-
-## Estrutura do projeto
+## Arquitetura
 
 ```
 /
-├── index.html              # página, importmap do Three.js local, HUD e painel
-├── iniciar.bat             # Windows: dois cliques para abrir com a GPU de alto desempenho
-├── css/
-│   └── style.css           # tela cheia, HUD, painel e avisos (responsivo)
+├── index.html                 # página, importmap do Three.js local, HUD, painéis
+├── iniciar.bat                # Windows: dois cliques para abrir com a GPU de alto desempenho
+├── css/style.css              # HUD, painéis, rótulos, radar, responsivo
 ├── js/
-│   ├── main.js             # renderer WebGL 2, cena, loop, cadeia de qualidade adaptativa
-│   ├── config.js           # modelo de M31: dimensões, rotação, braços, orçamento de luz
-│   ├── galaxy.js           # monta M31 num grupo com uniforms compartilhados
-│   ├── galaxyMap.js        # mapa procedural (poeira, braços, HII) gerado na GPU
-│   ├── galacticCore.js     # bulbo + núcleo (estrelas e componentes de luz)
-│   ├── stellarDisk.js      # disco antigo em órbitas de ondas de densidade
-│   ├── spiralArms.js       # estrelas jovens, associações OB, supergigantes, HII
-│   ├── dustLanes.js        # modelo de extinção da poeira
-│   ├── diffuseLight.js     # luz difusa volumétrica (bulbo + disco + poeira)
-│   ├── halo.js             # halo estelar e aglomerados globulares
-│   ├── satellites.js       # M32 e M110
-│   ├── backgroundStars.js  # campo estelar, estrelas brilhantes e galáxias de fundo
-│   ├── starPoints.js       # uma população = uma BufferGeometry + THREE.Points
-│   ├── postprocessing.js   # HDR, passe da luz difusa, bloom, tone mapping, vinheta
-│   ├── camera.js           # OrbitControls, enquadramento, lente dinâmica, reset, rotação automática
-│   ├── gpu.js              # descobre qual placa de vídeo o navegador usa
-│   ├── quality.js          # perfis ULTRA/HIGH/MEDIUM/LOW e governador de FPS
-│   ├── ui.js               # HUD, painel, atalhos, cartão de ajuda da GPU
-│   ├── random.js           # PRNG com semente e distribuições
-│   └── shaders/
-│       ├── common.glsl.js    # ruído simplex, integrais gaussianas (erf), cores, extinção
-│       ├── map.glsl.js       # gerador do mapa procedural
-│       ├── stars.glsl.js     # estrelas da galáxia (movimento na GPU), supergigantes, HII
-│       ├── volume.glsl.js    # integração volumétrica da luz difusa
-│       ├── satellite.glsl.js # brilho difuso de M32/M110
-│       └── sky.glsl.js       # céu de fundo
-├── tools/
-│   └── servidor.ps1        # servidor local em PowerShell + preferência de GPU do Windows
-├── vendor/three/           # Three.js r170 (MIT) e os addons usados
-├── docs/                   # imagens deste README
-├── .gitattributes          # CRLF para .bat/.ps1 (também no ZIP do GitHub)
-├── .gitignore
+│   ├── main.js                # renderer, cena, modos, atalhos, loop, qualidade adaptativa
+│   ├── config.js              # constantes comuns (sentido de rotação, curva de rotação)
+│   ├── gpu.js                 # descobre qual placa de vídeo o navegador usa
+│   ├── quality.js             # perfis ULTRA/HIGH/MEDIUM/LOW e governador de FPS
+│   ├── work.js                # geração em fatias de tempo
+│   ├── random.js              # PRNG com semente e distribuições
+│   ├── backgroundStars.js     # céu de fundo (acompanha a câmera, plano galáctico real)
+│   ├── postprocessing.js      # HDR, passe da luz difusa, bloom, tone mapping, vinheta
+│   ├── universe/
+│   │   ├── galaxyCatalog.js   # GALAXY_CATALOG: dados científicos + parâmetros visuais
+│   │   ├── specTools.js       # mescla/escala de specs, orientação "como na foto"
+│   │   ├── universe.js        # cria os sistemas, seleção, aquecimento dos shaders
+│   │   ├── lodManager.js      # níveis de detalhe, geração/liberação, orçamento global
+│   │   ├── beacons.js         # faróis das galáxias distantes
+│   │   └── spaceDust.js       # rastros de velocidade
+│   ├── galaxies/
+│   │   ├── galaxySystem.js    # um sistema do catálogo: corpos + correntes de maré
+│   │   ├── galaxyBody.js      # uma galáxia: mapa, luz difusa e populações de estrelas
+│   │   ├── galaxyMap.js       # mapa procedural na GPU (braços, barra, anéis, poeira, maré)
+│   │   ├── galacticCore.js    # bulbo/esferoide (estrelas + componentes de luz)
+│   │   ├── stellarDisk.js     # disco antigo em órbitas de ondas de densidade
+│   │   ├── spiralArms.js      # estrelas jovens, associações OB, supergigantes, HII
+│   │   ├── bar.js             # barras
+│   │   ├── shells.js          # conchas estelares (NGC 474)
+│   │   ├── tidal.js           # caudas, pontes e correntes de maré
+│   │   ├── halo.js            # halo e aglomerados globulares
+│   │   ├── satellites.js      # M32 e M110
+│   │   ├── diffuseLight.js    # luz difusa volumétrica
+│   │   ├── dustLanes.js       # extinção da poeira
+│   │   └── starPoints.js      # uma população = uma BufferGeometry + THREE.Points
+│   ├── navigation/
+│   │   ├── observer.js        # modo Observação (OrbitControls, lente, enquadramento)
+│   │   ├── freeFlight.js      # modo Exploração (voo livre, inércia, toque)
+│   │   └── travel.js          # piloto automático "Viajar até"
+│   ├── ui/
+│   │   ├── hud.js             # HUD, cartão de ajuda da GPU, dicas, carregamento
+│   │   ├── controls.js        # painel de ajustes
+│   │   ├── galaxyPanel.js     # lista de galáxias e cartão de informação
+│   │   ├── labels.js          # rótulos
+│   │   ├── radar.js           # radar
+│   │   ├── debug.js           # sobreposição ?debug=1
+│   │   └── format.js          # formatação de números
+│   └── shaders/               # GLSL: ruído, erf, mapa, estrelas, volume, satélites, céu
+├── tools/servidor.ps1         # servidor local em PowerShell + preferência de GPU do Windows
+├── vendor/three/              # Three.js r170 (MIT) e os addons usados
+├── docs/                      # imagens deste README e GALAXY_REFERENCES.md
 └── LICENSE
 ```
 
-## Referências e ponto de partida
+**Como uma galáxia é descrita.** Cada entrada de `GALAXY_CATALOG` tem duas metades: a **científica** (nome, designações, tipo, constelação, distância, coordenadas, fontes) e a de **visualização** (posição comprimida, orientação, escala, cor, peso no orçamento de estrelas, semente, parâmetros procedurais e o que o LOD mais próximo mostra). As galáxias de disco partem do modelo de M31, mudam o que difere na sua estrutura (`overrides`) e são escaladas ao seu tamanho (`scaleSpec`); elípticas, conchas, barras e correntes de maré são componentes adicionais. Para incluir uma galáxia nova basta acrescentar uma entrada ao catálogo.
 
-- **Vídeo de referência** (animação simples de partículas em espiral): foi apenas o conceito inicial. Aqui ele virou uma galáxia em camadas, tridimensional, com poeira que absorve luz, populações estelares, rotação diferencial e uma câmera cinematográfica.
-- **Projeto Black Hole**: referência técnica de arquitetura (ES Modules sem build), perfis de qualidade, governador de FPS, detecção de GPU e o launcher do Windows com a GPU de alto desempenho. Nada da física do buraco negro (lente, disco de acreção, Doppler) foi reaproveitado.
-- **Fotografias de M31**: referência visual de cor, inclinação (~77°), bulbo, faixas de poeira, anel azul e posição das satélites. Nenhuma imagem é usada na cena.
+## Testes
 
-## Observações
+Feitos neste ambiente de desenvolvimento, que **não tem GPU física**: Chromium sem interface (Playwright) com SwiftShader, ou seja, renderização na CPU, a 1–10 FPS. Os testes verificam o funcionamento, não o desempenho real.
 
-> Isto é uma visualização artística **inspirada** em dados reais de M31, não uma simulação científica. Escalas, cores e brilhos foram ajustados para lembrar as fotografias; a dinâmica (ondas de densidade, curva de rotação) é uma aproximação visual, não um cálculo gravitacional.
+| Teste | Resultado |
+| --- | --- |
+| Inicialização, console sem erros nem avisos | ok |
+| As 13 galáxias renderizadas e comparadas com as fotografias de referência | ok (galeria acima) |
+| Exploração: `TAB`, `W`, `Shift` progressivo, soltar as teclas (inércia) | ok |
+| `TAB` de volta à Observação: o centro da órbita desliza até a galáxia | ok |
+| Viagens: M31 → M104 → Antenas (cancelada no meio com `S`) → Hoag → Centaurus A → M31 | ok: fases, chegada no enquadramento, troca para Observação, geração do destino durante a viagem |
+| LOD: trocas de nível, geração antecipada, cancelamento e liberação de estrelas | ok (mensagens no console) |
+| `?galaxy=`, `?galaxy=` inexistente, `?seed=`, `?debug=1`, `?quality=` | ok |
+| Perfis ULTRA / HIGH / MEDIUM / LOW | ok (M31: 356 014 / 233 009 / 128 004 / 64 003 estrelas) |
+| Painel Galáxias, seleção sem teletransporte, `L`, `M`, `H`, `C`, `Esc`, `P` (PNG baixado), `Espaço`, `R`, `F` | ok |
+| Redimensionar para 390×844 (celular) e voltar | ok, sem rolagem horizontal |
+| Recarregar a página | ok |
+| Aberto via `file://`: aviso com instruções | ok |
+| Perda do contexto WebGL: aviso e recarga automática | ok |
+| Lint (ESLint) e análise do `servidor.ps1` pelo parser do PowerShell 7 | ok |
+
+**Não testado aqui** (sem acesso a esses ambientes): desempenho e FPS numa GPU real, Microsoft Edge, Firefox e Safari, a execução do `iniciar.bat` no Windows, a captura do mouse (pointer lock) com um mouse físico e o toque num aparelho real. O governador de FPS existe justamente para ajustar a qualidade à máquina de quem usa.
+
+## Limitações
+
+- As distâncias entre as galáxias são comprimidas e as orientações são visuais; não é um mapa em escala do universo.
+- A dinâmica é visual: não há simulação gravitacional; os sistemas em interação estão congelados num instante representativo.
+- As galáxias além de M31 têm menos estrelas que ela (pesos de 0,5 a 0,75 do orçamento) e não têm satélites.
+- Conchas (NGC 474) e caudas de maré são aproximações: as fotografias profundas mostram estruturas mais tênues e mais finas.
+- Dentro do bulbo de uma galáxia a cena fica muito clara (a luz difusa domina).
+- Os números dos perfis foram dimensionados pelo custo relativo medido em CPU (SwiftShader), mirando 60 FPS numa GPU dedicada de notebook (classe RTX 3050) em 1080p; não foram medidos numa GPU real.
+
+## Referências e créditos
+
+- **Dados científicos**: NASA (Hubble Messier Catalog), ESA/Hubble, ESA/Webb, ESO e NASA/IPAC Extragalactic Database (NED). Lista completa por galáxia em [docs/GALAXY_REFERENCES.md](docs/GALAXY_REFERENCES.md).
+- **Imagens de referência**: enviadas durante o desenvolvimento, usadas só como referência visual e **não incluídas** no repositório (várias têm direitos de terceiros). O documento acima lista cada uma, o objeto identificado e para que serviu.
+- **Projeto Black Hole**: referência técnica de arquitetura (ES Modules sem build), perfis de qualidade, governador de FPS, detecção de GPU e launcher do Windows.
+- As imagens em `docs/preview.jpg`, `docs/gallery.jpg` e `docs/angles.jpg` são capturas do próprio projeto.
 
 ## Licença
 
